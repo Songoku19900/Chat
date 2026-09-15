@@ -2,7 +2,6 @@
 <html lang="fr">
 
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -11,7 +10,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-
 * {
     box-sizing: border-box;
 }
@@ -24,7 +22,7 @@ body {
 }
 
 /* =========================
-   ECRAN DE CONNEXION
+   CONNEXION
 ========================= */
 
 #connexion {
@@ -84,6 +82,7 @@ button:disabled {
 }
 
 .btn-secondaire {
+    width: 100%;
     background: #e0e7ff;
     color: #3730a3;
     margin-top: 10px;
@@ -276,15 +275,11 @@ header h2 {
     .message {
         max-width: 90%;
     }
-
 }
-
 </style>
-
 </head>
 
 <body>
-
 
 <!-- =========================
      CONNEXION / INSCRIPTION
@@ -298,8 +293,8 @@ header h2 {
 
         <h1>Bienvenue sur Chat</h1>
 
-        <p id="description">
-            Connecte-toi à ton compte.
+        <p>
+            Connecte-toi avec ton pseudo et ton code.
         </p>
 
         <input
@@ -313,7 +308,8 @@ header h2 {
         <input
             type="password"
             id="motDePasse"
-            placeholder="Ton mot de passe"
+            placeholder="Ton code secret"
+            maxlength="50"
             autocomplete="current-password"
         >
 
@@ -356,7 +352,6 @@ header h2 {
 
     </header>
 
-
     <div class="conteneur">
 
         <aside class="menu">
@@ -386,9 +381,13 @@ header h2 {
 
             <div class="titre-discussion">
 
-                <h2>💬 Discussion générale</h2>
+                <h2 id="titrePage">
+                    💬 Discussion générale
+                </h2>
 
-                <p>Parle avec tes potes.</p>
+                <p id="descriptionPage">
+                    Parle avec tes potes.
+                </p>
 
             </div>
 
@@ -424,10 +423,9 @@ header h2 {
 
 
 <script>
-
-// ==========================================
-// CONFIGURATION SUPABASE
-// ==========================================
+/* ==========================================
+   CONFIGURATION SUPABASE
+========================================== */
 
 const SUPABASE_URL =
     "https://dlzmbyvclmlgohmecuui.supabase.co";
@@ -441,36 +439,39 @@ const client = window.supabase.createClient(
 );
 
 
-// ==========================================
-// VARIABLES
-// ==========================================
+/* ==========================================
+   VARIABLES
+========================================== */
 
 let utilisateur = null;
 let pseudoActuel = "";
 let canalMessages = null;
 
 
-// ==========================================
-// ELEMENTS HTML
-// ==========================================
+/* ==========================================
+   ELEMENTS HTML
+========================================== */
 
-const connexion = document.getElementById("connexion");
+const connexion =
+    document.getElementById("connexion");
 
-const application = document.getElementById("application");
+const application =
+    document.getElementById("application");
 
-const inputPseudo = document.getElementById("pseudo");
+const inputPseudo =
+    document.getElementById("pseudo");
 
 const inputMotDePasse =
     document.getElementById("motDePasse");
 
-const erreur = document.getElementById("erreur");
+const erreur =
+    document.getElementById("erreur");
 
-const succes = document.getElementById("succes");
+const succes =
+    document.getElementById("succes");
 
-const description =
-    document.getElementById("description");
-
-const monPseudo = document.getElementById("monPseudo");
+const monPseudo =
+    document.getElementById("monPseudo");
 
 const listeMessages =
     document.getElementById("listeMessages");
@@ -487,10 +488,16 @@ const btnInscription =
 const btnEnvoyer =
     document.getElementById("btnEnvoyer");
 
+const titrePage =
+    document.getElementById("titrePage");
 
-// ==========================================
-// UTILITAIRES
-// ==========================================
+const descriptionPage =
+    document.getElementById("descriptionPage");
+
+
+/* ==========================================
+   MESSAGES
+========================================== */
 
 function afficherErreur(message) {
     erreur.textContent = message;
@@ -502,44 +509,39 @@ function afficherSucces(message) {
     erreur.textContent = "";
 }
 
+
+/* ==========================================
+   VERIFICATIONS
+========================================== */
+
 function verifierPseudo(pseudo) {
-
     return /^[a-zA-Z0-9_]{3,20}$/.test(pseudo);
-
 }
 
-function verifierMotDePasse(motDePasse) {
-
-    return motDePasse.length >= 6;
-
+function verifierCode(code) {
+    return code.length >= 6;
 }
 
 
-// ==========================================
-// CREER UNE ADRESSE INTERNE
-// ==========================================
-
-function emailInterne(pseudo) {
-    return pseudo.toLowerCase() + "@example.com";
-}
-
-// ==========================================
-// INSCRIPTION
-// ==========================================
+/* ==========================================
+   CREATION DE COMPTE
+========================================== */
 
 btnInscription.addEventListener(
     "click",
     inscrire
 );
 
-
 async function inscrire() {
 
     afficherErreur("");
+    afficherSucces("");
 
-    const pseudo = inputPseudo.value.trim();
+    const pseudo =
+        inputPseudo.value.trim();
 
-    const motDePasse = inputMotDePasse.value;
+    const code =
+        inputMotDePasse.value;
 
     if (!verifierPseudo(pseudo)) {
 
@@ -550,10 +552,10 @@ async function inscrire() {
         return;
     }
 
-    if (!verifierMotDePasse(motDePasse)) {
+    if (!verifierCode(code)) {
 
         afficherErreur(
-            "Le mot de passe doit contenir au moins 6 caractères."
+            "Le code doit contenir au moins 6 caractères."
         );
 
         return;
@@ -561,43 +563,37 @@ async function inscrire() {
 
     btnInscription.disabled = true;
 
-    const email = emailInterne(pseudo);
+    afficherSucces("Création du compte...");
 
-    // Créer le compte Supabase
+    /*
+       On vérifie si le pseudo existe déjà.
+    */
 
-    const { data, error } =
-        await client.auth.signUp({
-            email: email,
-            password: motDePasse
-        });
+    const { data: profilExistant, error: erreurRecherche } =
+        await client
+            .from("profils")
+            .select("id")
+            .eq("pseudo", pseudo)
+            .maybeSingle();
 
-    if (error) {
+    if (erreurRecherche) {
 
-        if (
-            error.message.toLowerCase().includes("already")
-        ) {
+        afficherErreur(
+            "Erreur de vérification : " +
+            erreurRecherche.message
+        );
 
-            afficherErreur(
-                "Ce pseudo est déjà utilisé."
-            );
-
-        } else {
-
-            afficherErreur(
-                "Erreur : " + error.message
-            );
-
-        }
+        console.error(erreurRecherche);
 
         btnInscription.disabled = false;
 
         return;
     }
 
-    if (!data.user) {
+    if (profilExistant) {
 
         afficherErreur(
-            "Impossible de créer le compte."
+            "Ce pseudo est déjà utilisé."
         );
 
         btnInscription.disabled = false;
@@ -605,21 +601,32 @@ async function inscrire() {
         return;
     }
 
-    // Créer le profil associé
+    /*
+       Création d'un identifiant unique.
+    */
 
-    const { error: erreurProfil } =
+    const nouvelId =
+        crypto.randomUUID();
+
+    const { data: nouveauProfil, error } =
         await client
             .from("profils")
             .insert({
-                id: data.user.id,
-                pseudo: pseudo
-            });
+                id: nouvelId,
+                pseudo: pseudo,
+                code: code
+            })
+            .select()
+            .single();
 
-    if (erreurProfil) {
+    if (error) {
 
         afficherErreur(
-            "Compte créé, mais impossible de créer le profil."
+            "Erreur lors de la création : " +
+            error.message
         );
+
+        console.error(error);
 
         btnInscription.disabled = false;
 
@@ -633,19 +640,17 @@ async function inscrire() {
     inputMotDePasse.value = "";
 
     btnInscription.disabled = false;
-
 }
 
 
-// ==========================================
-// CONNEXION
-// ==========================================
+/* ==========================================
+   CONNEXION
+========================================== */
 
 btnConnexion.addEventListener(
     "click",
     connecter
 );
-
 
 inputMotDePasse.addEventListener(
     "keydown",
@@ -658,28 +663,28 @@ inputMotDePasse.addEventListener(
     }
 );
 
-
 async function connecter() {
 
     afficherErreur("");
+    afficherSucces("");
 
-    const pseudo = inputPseudo.value.trim();
+    const pseudo =
+        inputPseudo.value.trim();
 
-    const motDePasse = inputMotDePasse.value;
+    const code =
+        inputMotDePasse.value;
 
     if (!verifierPseudo(pseudo)) {
 
-        afficherErreur(
-            "Pseudo invalide."
-        );
+        afficherErreur("Pseudo invalide.");
 
         return;
     }
 
-    if (!motDePasse) {
+    if (!code) {
 
         afficherErreur(
-            "Entre ton mot de passe."
+            "Entre ton code secret."
         );
 
         return;
@@ -687,71 +692,88 @@ async function connecter() {
 
     btnConnexion.disabled = true;
 
-    const email = emailInterne(pseudo);
+    afficherSucces("Connexion...");
 
-    const { data, error } =
-        await client.auth.signInWithPassword({
-            email: email,
-            password: motDePasse
-        });
+    const { data: profil, error } =
+        await client
+            .from("profils")
+            .select("*")
+            .eq("pseudo", pseudo)
+            .eq("code", code)
+            .maybeSingle();
 
     if (error) {
 
         afficherErreur(
-            "Pseudo ou mot de passe incorrect."
+            "Erreur de connexion : " +
+            error.message
         );
+
+        console.error(error);
 
         btnConnexion.disabled = false;
 
         return;
     }
 
-    utilisateur = data.user;
-
-    // Récupérer le profil
-
-    const { data: profil, error: erreurProfil } =
-        await client
-            .from("profils")
-            .select("pseudo")
-            .eq("id", utilisateur.id)
-            .single();
-
-    if (erreurProfil || !profil) {
+    if (!profil) {
 
         afficherErreur(
-            "Profil introuvable."
+            "Pseudo ou code incorrect."
         );
-
-        await client.auth.signOut();
 
         btnConnexion.disabled = false;
 
         return;
     }
 
-    pseudoActuel = profil.pseudo;
-
-    monPseudo.textContent = "@" + pseudoActuel;
-
-    connexion.style.display = "none";
-
-    application.style.display = "block";
-
-    await chargerMessages();
-
-    ecouterMessages();
+    ouvrirApplication(profil);
 
     btnConnexion.disabled = false;
-
 }
 
 
-// ==========================================
-// CHARGER LES MESSAGES
-// ==========================================
+/* ==========================================
+   OUVRIR L'APPLICATION
+========================================== */
+
+function ouvrirApplication(profil) {
+
+    utilisateur = profil;
+    pseudoActuel = profil.pseudo;
+
+    /*
+       On ne sauvegarde pas le code dans le navigateur.
+    */
+
+    localStorage.setItem(
+        "compte_chat",
+        JSON.stringify({
+            id: profil.id,
+            pseudo: profil.pseudo
+        })
+    );
+
+    monPseudo.textContent =
+        "@" + pseudoActuel;
+
+    connexion.style.display = "none";
+    application.style.display = "block";
+
+    afficherDiscussion();
+
+    ecouterMessages();
+}
+
+
+/* ==========================================
+   CHARGER LES MESSAGES
+========================================== */
 
 async function chargerMessages() {
+
+    listeMessages.innerHTML =
+        "<p>Chargement des messages...</p>";
 
     const { data, error } =
         await client
@@ -774,63 +796,73 @@ async function chargerMessages() {
 
     listeMessages.innerHTML = "";
 
+    if (!data || data.length === 0) {
+
+        listeMessages.innerHTML =
+            "<p>Aucun message pour le moment.</p>";
+
+        return;
+    }
+
     data.forEach(afficherMessage);
 
     allerEnBas();
-
 }
 
 
-// ==========================================
-// AFFICHER UN MESSAGE
-// ==========================================
+/* ==========================================
+   AFFICHER UN MESSAGE
+========================================== */
 
 function afficherMessage(message) {
 
-    const bloc = document.createElement("div");
+    const bloc =
+        document.createElement("div");
 
     bloc.className = "message";
 
-    const nom = document.createElement("div");
+    const nom =
+        document.createElement("div");
 
     nom.className = "nom";
 
-    nom.textContent = "@" + message.pseudo;
+    nom.textContent =
+        "@" + message.pseudo;
 
-    const texte = document.createElement("div");
+    const texte =
+        document.createElement("div");
 
     texte.className = "texte";
 
-    texte.textContent = message.contenu;
+    texte.textContent =
+        message.contenu;
 
-    const date = document.createElement("div");
+    const date =
+        document.createElement("div");
 
     date.className = "date";
 
     date.textContent =
-        new Date(message.date_envoi)
-            .toLocaleString("fr-FR");
+        new Date(
+            message.date_envoi
+        ).toLocaleString("fr-FR");
 
     bloc.appendChild(nom);
-
     bloc.appendChild(texte);
-
     bloc.appendChild(date);
 
     listeMessages.appendChild(bloc);
-
 }
 
 
-// ==========================================
-// ENVOYER UN MESSAGE
-// ==========================================
+/* ==========================================
+   ENVOYER UN MESSAGE
+========================================== */
 
 btnEnvoyer.addEventListener(
     "click",
     envoyerMessage
 );
-
 
 inputMessage.addEventListener(
     "keydown",
@@ -843,12 +875,16 @@ inputMessage.addEventListener(
     }
 );
 
-
 async function envoyerMessage() {
 
-    const contenu = inputMessage.value.trim();
+    const contenu =
+        inputMessage.value.trim();
 
     if (!contenu) {
+        return;
+    }
+
+    if (!utilisateur) {
         return;
     }
 
@@ -866,7 +902,8 @@ async function envoyerMessage() {
     if (error) {
 
         alert(
-            "Impossible d'envoyer le message."
+            "Impossible d'envoyer le message : " +
+            error.message
         );
 
         console.error(error);
@@ -878,53 +915,138 @@ async function envoyerMessage() {
     }
 
     btnEnvoyer.disabled = false;
-
 }
 
 
-// ==========================================
-// TEMPS REEL
-// ==========================================
+/* ==========================================
+   TEMPS REEL
+========================================== */
 
 function ecouterMessages() {
 
-    canalMessages = client
-        .channel("nouveaux-messages")
-        .on(
-            "postgres_changes",
-            {
-                event: "INSERT",
-                schema: "public",
-                table: "messages"
-            },
-            function(payload) {
+    if (canalMessages) {
+        return;
+    }
 
-                afficherMessage(payload.new);
+    canalMessages =
+        client
+            .channel("nouveaux-messages")
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages"
+                },
+                function(payload) {
 
-                allerEnBas();
+                    afficherMessage(payload.new);
+                    allerEnBas();
 
-            }
-        )
-        .subscribe();
-
+                }
+            )
+            .subscribe();
 }
 
 
-// ==========================================
-// DESCENDRE EN BAS
-// ==========================================
+/* ==========================================
+   DESCENDRE EN BAS
+========================================== */
 
 function allerEnBas() {
 
     listeMessages.scrollTop =
         listeMessages.scrollHeight;
-
 }
 
 
-// ==========================================
-// DECONNEXION
-// ==========================================
+/* ==========================================
+   MENU ACCUEIL
+========================================== */
+
+document.getElementById("btnAccueil")
+    .addEventListener(
+        "click",
+        function() {
+
+            titrePage.textContent =
+                "🏠 Accueil";
+
+            descriptionPage.textContent =
+                "Bienvenue sur Chat !";
+
+            listeMessages.innerHTML =
+                "<p>Bienvenue sur ton espace Chat.</p>";
+
+            document.querySelector(
+                ".zone-envoi"
+            ).style.display = "none";
+
+        }
+    );
+
+
+/* ==========================================
+   MENU DISCUSSION
+========================================== */
+
+document.getElementById("btnDiscussion")
+    .addEventListener(
+        "click",
+        function() {
+
+            afficherDiscussion();
+
+        }
+    );
+
+async function afficherDiscussion() {
+
+    titrePage.textContent =
+        "💬 Discussion générale";
+
+    descriptionPage.textContent =
+        "Parle avec tes potes.";
+
+    document.querySelector(
+        ".zone-envoi"
+    ).style.display = "flex";
+
+    await chargerMessages();
+
+    allerEnBas();
+}
+
+
+/* ==========================================
+   MENU AMIS
+========================================== */
+
+document.getElementById("btnAmis")
+    .addEventListener(
+        "click",
+        function() {
+
+            titrePage.textContent =
+                "👥 Amis";
+
+            descriptionPage.textContent =
+                "Tes amis sur Chat.";
+
+            listeMessages.innerHTML =
+                "<p>La fonctionnalité Amis sera ajoutée prochainement.</p>";
+
+            document.querySelector(
+                ".zone-envoi"
+            ).style.display = "none";
+
+        }
+    );
+
+
+/* ==========================================
+   DECONNEXION
+========================================== */
 
 document.getElementById("btnDeconnexion")
     .addEventListener(
@@ -941,69 +1063,89 @@ document.getElementById("btnDeconnexion")
 
             }
 
-            await client.auth.signOut();
-
             utilisateur = null;
-
             pseudoActuel = "";
 
-            application.style.display = "none";
+            localStorage.removeItem(
+                "compte_chat"
+            );
 
+            application.style.display = "none";
             connexion.style.display = "flex";
 
             inputPseudo.value = "";
-
             inputMotDePasse.value = "";
-
             inputMessage.value = "";
 
             listeMessages.innerHTML = "";
 
-            btnConnexion.disabled = false;
+            afficherErreur("");
+            afficherSucces("");
 
         }
     );
 
 
-// ==========================================
-// MENU
-// ==========================================
+/* ==========================================
+   RECONNEXION AUTOMATIQUE
+========================================== */
 
-document.getElementById("btnAccueil")
-    .addEventListener(
-        "click",
-        function() {
+async function verifierConnexionSauvegardee() {
 
-            alert("Bienvenue sur Chat !");
+    const compteSauvegarde =
+        localStorage.getItem("compte_chat");
 
+    if (!compteSauvegarde) {
+        return;
+    }
+
+    try {
+
+        const compte =
+            JSON.parse(compteSauvegarde);
+
+        if (!compte.id || !compte.pseudo) {
+            return;
         }
-    );
 
+        /*
+           On vérifie que le profil existe toujours.
+        */
 
-document.getElementById("btnDiscussion")
-    .addEventListener(
-        "click",
-        function() {
+        const { data: profil, error } =
+            await client
+                .from("profils")
+                .select("*")
+                .eq("id", compte.id)
+                .eq("pseudo", compte.pseudo)
+                .maybeSingle();
 
-            alert(
-                "Tu es déjà dans la discussion générale."
+        if (error || !profil) {
+
+            localStorage.removeItem(
+                "compte_chat"
             );
 
+            return;
         }
-    );
+
+        ouvrirApplication(profil);
+
+    } catch (error) {
+
+        localStorage.removeItem(
+            "compte_chat"
+        );
+
+    }
+}
 
 
-document.getElementById("btnAmis")
-    .addEventListener(
-        "click",
-        function() {
+/* ==========================================
+   LANCEMENT
+========================================== */
 
-            alert(
-                "La fonctionnalité Amis sera ajoutée prochainement."
-            );
-
-        }
-    );
+verifierConnexionSauvegardee();
 
 </script>
 
