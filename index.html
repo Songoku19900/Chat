@@ -2,6 +2,7 @@
 <html lang="fr">
 
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -23,7 +24,7 @@ body {
 }
 
 /* =========================
-   CONNEXION
+   ECRAN DE CONNEXION
 ========================= */
 
 #connexion {
@@ -36,7 +37,7 @@ body {
 
 .boite-connexion {
     background: white;
-    padding: 35px;
+    padding: 30px;
     width: 100%;
     max-width: 400px;
     border-radius: 18px;
@@ -52,13 +53,13 @@ h1 {
     color: #4f46e5;
 }
 
-#pseudo {
+input {
     width: 100%;
     padding: 14px;
     border: 1px solid #ccc;
     border-radius: 10px;
     font-size: 16px;
-    margin-top: 15px;
+    margin-top: 12px;
 }
 
 button {
@@ -69,7 +70,12 @@ button {
     font-size: 15px;
 }
 
-#btnConnexion {
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-principal {
     width: 100%;
     margin-top: 15px;
     background: #4f46e5;
@@ -77,12 +83,19 @@ button {
     font-weight: bold;
 }
 
-#btnConnexion:hover {
-    background: #3730a3;
+.btn-secondaire {
+    background: #e0e7ff;
+    color: #3730a3;
+    margin-top: 10px;
 }
 
 #erreur {
     color: #dc2626;
+    margin-top: 15px;
+}
+
+#succes {
+    color: #16a34a;
     margin-top: 15px;
 }
 
@@ -220,10 +233,6 @@ header h2 {
 
 #message {
     flex: 1;
-    padding: 13px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-size: 15px;
     min-width: 0;
 }
 
@@ -271,12 +280,14 @@ header h2 {
 }
 
 </style>
+
 </head>
 
 <body>
 
+
 <!-- =========================
-     ECRAN DE CONNEXION
+     CONNEXION / INSCRIPTION
 ========================= -->
 
 <section id="connexion">
@@ -287,21 +298,42 @@ header h2 {
 
         <h1>Bienvenue sur Chat</h1>
 
-        <p>Choisis ton pseudo pour commencer.</p>
+        <p id="description">
+            Connecte-toi à ton compte.
+        </p>
 
         <input
             type="text"
             id="pseudo"
-            placeholder="Ton pseudo..."
+            placeholder="Ton pseudo"
             maxlength="20"
-            autocomplete="off"
+            autocomplete="username"
         >
 
-        <button id="btnConnexion">
+        <input
+            type="password"
+            id="motDePasse"
+            placeholder="Ton mot de passe"
+            autocomplete="current-password"
+        >
+
+        <button
+            class="btn-principal"
+            id="btnConnexion"
+        >
             Se connecter
         </button>
 
+        <button
+            class="btn-secondaire"
+            id="btnInscription"
+        >
+            Créer un compte
+        </button>
+
         <p id="erreur"></p>
+
+        <p id="succes"></p>
 
     </div>
 
@@ -327,8 +359,6 @@ header h2 {
 
     <div class="conteneur">
 
-        <!-- MENU -->
-
         <aside class="menu">
 
             <p>MENU</p>
@@ -351,8 +381,6 @@ header h2 {
 
         </aside>
 
-
-        <!-- DISCUSSION -->
 
         <main class="discussion">
 
@@ -405,7 +433,7 @@ const SUPABASE_URL =
     "https://dlzmbyvclmlgohmecuui.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_qd9EbA110P3SerFO3iq2iQ_cAgPzzGi";
+    "TA_CLE_PUBLIQUE";
 
 const client = window.supabase.createClient(
     SUPABASE_URL,
@@ -432,67 +460,250 @@ const application = document.getElementById("application");
 
 const inputPseudo = document.getElementById("pseudo");
 
+const inputMotDePasse =
+    document.getElementById("motDePasse");
+
 const erreur = document.getElementById("erreur");
+
+const succes = document.getElementById("succes");
+
+const description =
+    document.getElementById("description");
 
 const monPseudo = document.getElementById("monPseudo");
 
-const listeMessages = document.getElementById("listeMessages");
+const listeMessages =
+    document.getElementById("listeMessages");
 
-const inputMessage = document.getElementById("message");
+const inputMessage =
+    document.getElementById("message");
 
-const btnConnexion = document.getElementById("btnConnexion");
+const btnConnexion =
+    document.getElementById("btnConnexion");
 
-const btnEnvoyer = document.getElementById("btnEnvoyer");
+const btnInscription =
+    document.getElementById("btnInscription");
+
+const btnEnvoyer =
+    document.getElementById("btnEnvoyer");
+
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+
+function afficherErreur(message) {
+    erreur.textContent = message;
+    succes.textContent = "";
+}
+
+function afficherSucces(message) {
+    succes.textContent = message;
+    erreur.textContent = "";
+}
+
+function verifierPseudo(pseudo) {
+
+    return /^[a-zA-Z0-9_]{3,20}$/.test(pseudo);
+
+}
+
+function verifierMotDePasse(motDePasse) {
+
+    return motDePasse.length >= 6;
+
+}
+
+
+// ==========================================
+// CREER UNE ADRESSE INTERNE
+// ==========================================
+
+function emailInterne(pseudo) {
+
+    return pseudo.toLowerCase() +
+        "@chat-utilisateurs.local";
+
+}
+
+
+// ==========================================
+// INSCRIPTION
+// ==========================================
+
+btnInscription.addEventListener(
+    "click",
+    inscrire
+);
+
+
+async function inscrire() {
+
+    afficherErreur("");
+
+    const pseudo = inputPseudo.value.trim();
+
+    const motDePasse = inputMotDePasse.value;
+
+    if (!verifierPseudo(pseudo)) {
+
+        afficherErreur(
+            "Le pseudo doit contenir 3 à 20 caractères : lettres, chiffres ou _."
+        );
+
+        return;
+    }
+
+    if (!verifierMotDePasse(motDePasse)) {
+
+        afficherErreur(
+            "Le mot de passe doit contenir au moins 6 caractères."
+        );
+
+        return;
+    }
+
+    btnInscription.disabled = true;
+
+    const email = emailInterne(pseudo);
+
+    // Créer le compte Supabase
+
+    const { data, error } =
+        await client.auth.signUp({
+            email: email,
+            password: motDePasse
+        });
+
+    if (error) {
+
+        if (
+            error.message.toLowerCase().includes("already")
+        ) {
+
+            afficherErreur(
+                "Ce pseudo est déjà utilisé."
+            );
+
+        } else {
+
+            afficherErreur(
+                "Erreur : " + error.message
+            );
+
+        }
+
+        btnInscription.disabled = false;
+
+        return;
+    }
+
+    if (!data.user) {
+
+        afficherErreur(
+            "Impossible de créer le compte."
+        );
+
+        btnInscription.disabled = false;
+
+        return;
+    }
+
+    // Créer le profil associé
+
+    const { error: erreurProfil } =
+        await client
+            .from("profils")
+            .insert({
+                id: data.user.id,
+                pseudo: pseudo
+            });
+
+    if (erreurProfil) {
+
+        afficherErreur(
+            "Compte créé, mais impossible de créer le profil."
+        );
+
+        btnInscription.disabled = false;
+
+        return;
+    }
+
+    afficherSucces(
+        "Compte créé ! Tu peux maintenant te connecter."
+    );
+
+    inputMotDePasse.value = "";
+
+    btnInscription.disabled = false;
+
+}
 
 
 // ==========================================
 // CONNEXION
 // ==========================================
 
-btnConnexion.addEventListener("click", connecter);
+btnConnexion.addEventListener(
+    "click",
+    connecter
+);
 
-inputPseudo.addEventListener("keydown", function(event) {
 
-    if (event.key === "Enter") {
-        connecter();
+inputMotDePasse.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+            connecter();
+        }
+
     }
-
-});
+);
 
 
 async function connecter() {
 
-    erreur.textContent = "";
+    afficherErreur("");
 
     const pseudo = inputPseudo.value.trim();
 
-    if (pseudo.length < 3) {
+    const motDePasse = inputMotDePasse.value;
 
-        erreur.textContent =
-            "Le pseudo doit contenir au moins 3 caractères.";
+    if (!verifierPseudo(pseudo)) {
+
+        afficherErreur(
+            "Pseudo invalide."
+        );
 
         return;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(pseudo)) {
+    if (!motDePasse) {
 
-        erreur.textContent =
-            "Utilise uniquement des lettres, chiffres et _.";
+        afficherErreur(
+            "Entre ton mot de passe."
+        );
 
         return;
     }
 
     btnConnexion.disabled = true;
 
-    // Connexion anonyme
+    const email = emailInterne(pseudo);
 
     const { data, error } =
-        await client.auth.signInAnonymously();
+        await client.auth.signInWithPassword({
+            email: email,
+            password: motDePasse
+        });
 
     if (error) {
 
-        erreur.textContent =
-            "Erreur de connexion : " + error.message;
+        afficherErreur(
+            "Pseudo ou mot de passe incorrect."
+        );
 
         btnConnexion.disabled = false;
 
@@ -501,31 +712,20 @@ async function connecter() {
 
     utilisateur = data.user;
 
-    // Vérifier si le pseudo est déjà utilisé
+    // Récupérer le profil
 
-    const { data: profilExistant, error: erreurRecherche } =
+    const { data: profil, error: erreurProfil } =
         await client
             .from("profils")
-            .select("id")
-            .eq("pseudo", pseudo)
-            .maybeSingle();
+            .select("pseudo")
+            .eq("id", utilisateur.id)
+            .single();
 
-    if (erreurRecherche) {
+    if (erreurProfil || !profil) {
 
-        erreur.textContent =
-            "Impossible de vérifier le pseudo.";
-
-        await client.auth.signOut();
-
-        btnConnexion.disabled = false;
-
-        return;
-    }
-
-    if (profilExistant) {
-
-        erreur.textContent =
-            "Ce pseudo est déjà utilisé.";
+        afficherErreur(
+            "Profil introuvable."
+        );
 
         await client.auth.signOut();
 
@@ -534,38 +734,7 @@ async function connecter() {
         return;
     }
 
-    // Créer le profil
-
-    const { error: erreurProfil } =
-        await client
-            .from("profils")
-            .insert({
-                id: utilisateur.id,
-                pseudo: pseudo
-            });
-
-    if (erreurProfil) {
-
-        if (erreurProfil.code === "23505") {
-
-            erreur.textContent =
-                "Ce pseudo est déjà utilisé.";
-
-        } else {
-
-            erreur.textContent =
-                "Impossible de créer le profil.";
-
-        }
-
-        await client.auth.signOut();
-
-        btnConnexion.disabled = false;
-
-        return;
-    }
-
-    pseudoActuel = pseudo;
+    pseudoActuel = profil.pseudo;
 
     monPseudo.textContent = "@" + pseudoActuel;
 
@@ -576,6 +745,8 @@ async function connecter() {
     await chargerMessages();
 
     ecouterMessages();
+
+    btnConnexion.disabled = false;
 
 }
 
@@ -659,22 +830,29 @@ function afficherMessage(message) {
 // ENVOYER UN MESSAGE
 // ==========================================
 
-btnEnvoyer.addEventListener("click", envoyerMessage);
+btnEnvoyer.addEventListener(
+    "click",
+    envoyerMessage
+);
 
-inputMessage.addEventListener("keydown", function(event) {
 
-    if (event.key === "Enter") {
-        envoyerMessage();
+inputMessage.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+            envoyerMessage();
+        }
+
     }
-
-});
+);
 
 
 async function envoyerMessage() {
 
     const contenu = inputMessage.value.trim();
 
-    if (contenu === "") {
+    if (!contenu) {
         return;
     }
 
@@ -691,7 +869,9 @@ async function envoyerMessage() {
 
     if (error) {
 
-        alert("Impossible d'envoyer le message.");
+        alert(
+            "Impossible d'envoyer le message."
+        );
 
         console.error(error);
 
@@ -751,32 +931,42 @@ function allerEnBas() {
 // ==========================================
 
 document.getElementById("btnDeconnexion")
-    .addEventListener("click", async function() {
+    .addEventListener(
+        "click",
+        async function() {
 
-        if (canalMessages) {
-            await client.removeChannel(canalMessages);
-            canalMessages = null;
+            if (canalMessages) {
+
+                await client.removeChannel(
+                    canalMessages
+                );
+
+                canalMessages = null;
+
+            }
+
+            await client.auth.signOut();
+
+            utilisateur = null;
+
+            pseudoActuel = "";
+
+            application.style.display = "none";
+
+            connexion.style.display = "flex";
+
+            inputPseudo.value = "";
+
+            inputMotDePasse.value = "";
+
+            inputMessage.value = "";
+
+            listeMessages.innerHTML = "";
+
+            btnConnexion.disabled = false;
+
         }
-
-        await client.auth.signOut();
-
-        utilisateur = null;
-
-        pseudoActuel = "";
-
-        application.style.display = "none";
-
-        connexion.style.display = "flex";
-
-        inputPseudo.value = "";
-
-        inputMessage.value = "";
-
-        listeMessages.innerHTML = "";
-
-        btnConnexion.disabled = false;
-
-    });
+    );
 
 
 // ==========================================
@@ -784,27 +974,40 @@ document.getElementById("btnDeconnexion")
 // ==========================================
 
 document.getElementById("btnAccueil")
-    .addEventListener("click", function() {
+    .addEventListener(
+        "click",
+        function() {
 
-        alert("Bienvenue sur Chat !");
+            alert("Bienvenue sur Chat !");
 
-    });
+        }
+    );
 
 
 document.getElementById("btnDiscussion")
-    .addEventListener("click", function() {
+    .addEventListener(
+        "click",
+        function() {
 
-        alert("Tu es déjà dans la discussion générale.");
+            alert(
+                "Tu es déjà dans la discussion générale."
+            );
 
-    });
+        }
+    );
 
 
 document.getElementById("btnAmis")
-    .addEventListener("click", function() {
+    .addEventListener(
+        "click",
+        function() {
 
-        alert("La fonctionnalité Amis sera ajoutée prochainement.");
+            alert(
+                "La fonctionnalité Amis sera ajoutée prochainement."
+            );
 
-    });
+        }
+    );
 
 </script>
 
