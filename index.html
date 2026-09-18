@@ -856,6 +856,30 @@ header {
     filter: brightness(0.95);
 }
 
+#btnImage {
+    width: 48px;
+    min-width: 48px;
+    padding: 0;
+    background: #2563eb;
+    color: white;
+    border-radius: 11px;
+    font-size: 20px;
+}
+
+#btnImage:hover {
+    filter: brightness(0.95);
+}
+
+.image-privee {
+    display: block;
+    max-width: min(320px, 100%);
+    max-height: 400px;
+    margin-top: 5px;
+    border-radius: 12px;
+    object-fit: contain;
+}
+
+
 #btnVocal.enregistrement {
     background: #111827;
     animation: pulseVocal 1s infinite;
@@ -1232,6 +1256,21 @@ header {
                 🎙️
             </button>
 
+            <button
+                id="btnImage"
+                title="Envoyer une image"
+                type="button"
+            >
+                🖼️
+            </button>
+
+            <input
+                type="file"
+                id="inputImage"
+                accept="image/*"
+                style="display: none;"
+            >
+
             <span id="statutVocal"></span>
 
             <button id="btnEnvoyer">
@@ -1328,6 +1367,12 @@ const btnEnvoyer =
 
 const btnVocal =
     document.getElementById("btnVocal");
+
+const btnImage =
+    document.getElementById("btnImage");
+
+const inputImage =
+    document.getElementById("inputImage");
 
 const statutVocal =
     document.getElementById("statutVocal");
@@ -3413,6 +3458,43 @@ function afficherMessagePrive(
 
 
     if (
+        message.type_message === "image" &&
+        message.image_url
+    ) {
+
+        const image =
+            document.createElement("img");
+
+        image.className =
+            "image-privee";
+
+        image.src =
+            message.image_url;
+
+        image.alt =
+            "Image envoyée";
+
+        image.loading =
+            "lazy";
+
+        image.addEventListener(
+            "click",
+            function() {
+                window.open(
+                    message.image_url,
+                    "_blank"
+                );
+            }
+        );
+
+        image.style.cursor =
+            "pointer";
+
+        bulle.appendChild(
+            image
+        );
+
+    } else if (
         message.type_message === "vocal" &&
         message.audio_url
     ) {
@@ -3794,6 +3876,190 @@ async function envoyerVocalPrive(
     }
 
 }
+
+
+/* =========================================================
+   ENVOYER UNE IMAGE PRIVEE
+========================================================= */
+
+async function envoyerImagePrive(
+    fichier
+) {
+
+    if (
+        !conversationActuelle ||
+        !utilisateurPriveActuel
+    ) {
+        alert("Ouvre d'abord une conversation privée.");
+        return;
+    }
+
+    if (!fichier) {
+        return;
+    }
+
+    if (!fichier.type.startsWith("image/")) {
+        alert("Choisis une image.");
+        return;
+    }
+
+    const tailleMax =
+        8 * 1024 * 1024;
+
+    if (fichier.size > tailleMax) {
+        alert("L'image est trop grande. Maximum : 8 Mo.");
+        return;
+    }
+
+    btnImage.disabled = true;
+
+    statutVocal.textContent =
+        "Envoi de l'image...";
+
+    const extension =
+        (
+            fichier.name.split(".").pop() ||
+            "jpg"
+        )
+        .toLowerCase();
+
+    const nomFichier =
+        utilisateur.id +
+        "/" +
+        conversationActuelle.id +
+        "-" +
+        Date.now() +
+        "." +
+        extension;
+
+    try {
+
+        const resultatUpload =
+            await client
+                .storage
+                .from("images")
+                .upload(
+                    nomFichier,
+                    fichier,
+                    {
+                        contentType:
+                            fichier.type,
+                        upsert:
+                            false
+                    }
+                );
+
+        if (resultatUpload.error) {
+            throw resultatUpload.error;
+        }
+
+        const resultatUrl =
+            client
+                .storage
+                .from("images")
+                .getPublicUrl(
+                    nomFichier
+                );
+
+        const imageUrl =
+            resultatUrl.data.publicUrl;
+
+        const resultatMessage =
+            await client
+                .from("messages_prives")
+                .insert({
+
+                    conversation_id:
+                        conversationActuelle.id,
+
+                    auteur_id:
+                        utilisateur.id,
+
+                    pseudo:
+                        pseudoActuel,
+
+                    texte:
+                        "",
+
+                    type_message:
+                        "image",
+
+                    image_url:
+                        imageUrl
+                });
+
+        if (resultatMessage.error) {
+            throw resultatMessage.error;
+        }
+
+        statutVocal.textContent =
+            "Image envoyée";
+
+        setTimeout(
+            function() {
+                statutVocal.textContent =
+                    "";
+            },
+            1500
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        statutVocal.textContent =
+            "";
+
+        alert(
+            "Impossible d'envoyer l'image : " +
+            error.message
+        );
+
+    } finally {
+
+        btnImage.disabled =
+            false;
+
+        inputImage.value =
+            "";
+
+    }
+
+}
+
+
+btnImage.addEventListener(
+    "click",
+    function() {
+        if (
+            !conversationActuelle ||
+            !utilisateurPriveActuel
+        ) {
+            alert("Ouvre d'abord une conversation privée.");
+            return;
+        }
+
+        inputImage.click();
+    }
+);
+
+
+inputImage.addEventListener(
+    "change",
+    function() {
+
+        const fichier =
+            inputImage.files &&
+            inputImage.files[0];
+
+        if (fichier) {
+            envoyerImagePrive(
+                fichier
+            );
+        }
+
+    }
+);
 
 
 /* =========================================================
