@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-
 <html lang="fr">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,8 +17,8 @@
 
 :root {
     --primaire: #4f46e5;
-    --primaire-clair: #eef2ff;
     --primaire-hover: #4338ca;
+    --primaire-clair: #eef2ff;
 
     --fond: #f5f7fb;
     --blanc: #ffffff;
@@ -29,10 +29,16 @@
     --bordure: #e2e8f0;
 
     --vert: #22c55e;
+    --vert-clair: #ecfdf5;
+
     --gris: #94a3b8;
+
+    --rouge: #dc2626;
+    --rouge-clair: #fef2f2;
 
     --ombre: 0 4px 20px rgba(15, 23, 42, 0.07);
 }
+
 
 /* =========================================================
    BASE
@@ -61,12 +67,14 @@ input {
 
 button {
     cursor: pointer;
+    border: none;
 }
 
 button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
 
 /* =========================================================
    CONNEXION
@@ -125,13 +133,10 @@ button:disabled {
 
 .boite-connexion h1 {
     margin: 0;
-
-    color: var(--texte);
-
     font-size: 28px;
 }
 
-.boite-connexion .sous-titre {
+.sous-titre {
     margin: 10px 0 25px;
 
     color: var(--texte-secondaire);
@@ -153,7 +158,7 @@ button:disabled {
 
     font-size: 15px;
 
-    background: #fff;
+    background: white;
 
     transition: 0.2s;
 }
@@ -204,7 +209,7 @@ button:disabled {
 
     margin: 15px 0 0;
 
-    color: #dc2626;
+    color: var(--rouge);
 
     font-size: 14px;
 }
@@ -219,6 +224,7 @@ button:disabled {
     font-size: 14px;
 }
 
+
 /* =========================================================
    APPLICATION
 ========================================================= */
@@ -228,6 +234,7 @@ button:disabled {
 
     min-height: 100vh;
 }
+
 
 /* =========================================================
    HEADER
@@ -275,9 +282,9 @@ header {
 .btn-deconnexion {
     padding: 9px 14px;
 
-    background: #fef2f2;
+    background: var(--rouge-clair);
 
-    color: #dc2626;
+    color: var(--rouge);
 
     border: 1px solid #fecaca;
 
@@ -290,6 +297,7 @@ header {
     background: #fee2e2;
 }
 
+
 /* =========================================================
    STRUCTURE
 ========================================================= */
@@ -299,6 +307,7 @@ header {
 
     min-height: calc(100vh - 68px);
 }
+
 
 /* =========================================================
    MENU
@@ -325,6 +334,7 @@ header {
     font-weight: bold;
 
     text-transform: uppercase;
+
     letter-spacing: 0.08em;
 }
 
@@ -349,10 +359,14 @@ header {
     text-align: left;
 
     font-size: 14px;
+
+    transition: 0.2s;
 }
 
-.menu button:hover {
+.menu button:hover,
+.menu button.actif {
     background: var(--primaire-clair);
+
     color: var(--primaire);
 }
 
@@ -390,6 +404,7 @@ header {
     overflow-wrap: anywhere;
 }
 
+
 /* =========================================================
    CONTENU
 ========================================================= */
@@ -402,6 +417,7 @@ header {
     display: flex;
     flex-direction: column;
 }
+
 
 /* =========================================================
    TITRE
@@ -429,6 +445,7 @@ header {
     font-size: 14px;
 }
 
+
 /* =========================================================
    ZONE PRINCIPALE
 ========================================================= */
@@ -440,6 +457,26 @@ header {
 
     padding: 25px 28px;
 }
+
+
+/* =========================================================
+   MESSAGE VIDE
+========================================================= */
+
+.message-vide {
+    padding: 30px;
+
+    background: var(--blanc);
+
+    border: 1px dashed var(--bordure);
+
+    border-radius: 14px;
+
+    color: var(--texte-secondaire);
+
+    text-align: center;
+}
+
 
 /* =========================================================
    ACCUEIL
@@ -464,7 +501,7 @@ header {
 .compteur-connectes {
     padding: 7px 11px;
 
-    background: #ecfdf5;
+    background: var(--vert-clair);
 
     color: #15803d;
 
@@ -472,15 +509,6 @@ header {
 
     font-size: 13px;
     font-weight: bold;
-}
-
-.grille-utilisateurs {
-    display: grid;
-
-    grid-template-columns:
-        repeat(auto-fill, minmax(260px, 1fr));
-
-    gap: 14px;
 }
 
 .section-utilisateurs {
@@ -492,6 +520,20 @@ header {
 
     font-size: 16px;
 }
+
+.grille-utilisateurs {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(260px, 1fr));
+
+    gap: 14px;
+}
+
+
+/* =========================================================
+   CARTE UTILISATEUR
+========================================================= */
 
 .carte-utilisateur {
     display: flex;
@@ -507,7 +549,8 @@ header {
 
     border-radius: 15px;
 
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    box-shadow:
+        0 2px 8px rgba(15, 23, 42, 0.04);
 
     transition: 0.2s;
 }
@@ -540,22 +583,7 @@ header {
     font-weight: bold;
 }
 
-.point-en-ligne {
-    position: absolute;
-
-    right: -2px;
-    bottom: -2px;
-
-    width: 13px;
-    height: 13px;
-
-    background: var(--vert);
-
-    border: 3px solid white;
-
-    border-radius: 50%;
-}
-
+.point-en-ligne,
 .point-hors-ligne {
     position: absolute;
 
@@ -565,11 +593,17 @@ header {
     width: 13px;
     height: 13px;
 
-    background: var(--gris);
-
     border: 3px solid white;
 
     border-radius: 50%;
+}
+
+.point-en-ligne {
+    background: var(--vert);
+}
+
+.point-hors-ligne {
+    background: var(--gris);
 }
 
 .infos-utilisateur {
@@ -592,22 +626,33 @@ header {
     font-size: 12px;
 }
 
-.message-vide {
-    padding: 30px;
-
-    background: var(--blanc);
-
-    border: 1px dashed var(--bordure);
-
-    border-radius: 14px;
-
-    color: var(--texte-secondaire);
-
-    text-align: center;
-}
 
 /* =========================================================
-   MESSAGES
+   BOUTON PARLER
+========================================================= */
+
+.btn-parler {
+    padding: 8px 11px;
+
+    background: var(--primaire-clair);
+
+    color: var(--primaire);
+
+    border-radius: 9px;
+
+    font-size: 12px;
+    font-weight: bold;
+
+    flex-shrink: 0;
+}
+
+.btn-parler:hover {
+    background: #e0e7ff;
+}
+
+
+/* =========================================================
+   DISCUSSION PUBLIQUE
 ========================================================= */
 
 .message {
@@ -625,7 +670,8 @@ header {
 
     border-radius: 14px;
 
-    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+    box-shadow:
+        0 2px 5px rgba(15, 23, 42, 0.04);
 }
 
 .message .nom {
@@ -645,13 +691,119 @@ header {
 .message .date {
     margin-top: 7px;
 
-    color: #94a3b8;
+    color: var(--gris);
 
     font-size: 11px;
 }
 
+
 /* =========================================================
-   ENVOI
+   CONVERSATION PRIVEE
+========================================================= */
+
+.en-tete-prive {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+.btn-retour {
+    padding: 9px 12px;
+
+    background: var(--primaire-clair);
+
+    color: var(--primaire);
+
+    border-radius: 10px;
+
+    font-weight: bold;
+}
+
+.btn-retour:hover {
+    background: #e0e7ff;
+}
+
+.info-prive {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-prive-nom {
+    font-weight: bold;
+
+    font-size: 17px;
+}
+
+.info-prive-statut {
+    margin-top: 3px;
+
+    color: var(--texte-secondaire);
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   MESSAGES PRIVES
+========================================================= */
+
+.message-prive {
+    display: flex;
+
+    margin-bottom: 12px;
+}
+
+.message-prive.moi {
+    justify-content: flex-end;
+}
+
+.bulle-privee {
+    max-width: min(75%, 600px);
+
+    padding: 11px 14px;
+
+    background: white;
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 15px;
+}
+
+.message-prive.moi .bulle-privee {
+    background: var(--primaire-clair);
+
+    border-color: #c7d2fe;
+}
+
+.nom-prive {
+    margin-bottom: 4px;
+
+    color: var(--primaire);
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.texte-prive {
+    overflow-wrap: anywhere;
+
+    line-height: 1.45;
+}
+
+.date-prive {
+    margin-top: 6px;
+
+    color: var(--gris);
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   ZONE ENVOI
 ========================================================= */
 
 .zone-envoi {
@@ -681,12 +833,53 @@ header {
 
     color: white;
 
+    border-radius: 11px;
+
     font-weight: bold;
 }
 
 #btnEnvoyer:hover {
     background: var(--primaire-hover);
 }
+
+
+/* =========================================================
+   RECHERCHE POTES
+========================================================= */
+
+.zone-recherche {
+    margin-bottom: 20px;
+}
+
+#recherchePotes {
+    margin: 0;
+}
+
+
+/* =========================================================
+   BADGE EN LIGNE
+========================================================= */
+
+.badge-en-ligne {
+    display: inline-block;
+
+    margin-top: 5px;
+
+    color: #16a34a;
+
+    font-size: 12px;
+}
+
+.badge-hors-ligne {
+    display: inline-block;
+
+    margin-top: 5px;
+
+    color: var(--gris);
+
+    font-size: 12px;
+}
+
 
 /* =========================================================
    RESPONSIVE
@@ -746,11 +939,19 @@ header {
         max-width: 90%;
     }
 
+    .bulle-privee {
+        max-width: 90%;
+    }
+
     .grille-utilisateurs {
         grid-template-columns: 1fr;
     }
 
+    .btn-parler {
+        padding: 8px;
+    }
 }
+
 
 @media (max-width: 480px) {
 
@@ -774,6 +975,7 @@ header {
 
 }
 
+
 /* =========================================================
    SCROLLBAR
 ========================================================= */
@@ -792,7 +994,9 @@ header {
 
 </head>
 
+
 <body>
+
 
 <!-- ========================================================
      CONNEXION
@@ -800,59 +1004,58 @@ header {
 
 <section id="connexion">
 
-```
-<div class="boite-connexion">
+    <div class="boite-connexion">
 
-    <div class="logo-connexion">
-        💬
+        <div class="logo-connexion">
+            💬
+        </div>
+
+        <h1>Bienvenue sur Chat</h1>
+
+        <p class="sous-titre">
+            Connecte-toi avec ton pseudo et ton code secret.
+        </p>
+
+        <input
+            class="champ"
+            type="text"
+            id="pseudo"
+            placeholder="Ton pseudo"
+            maxlength="20"
+            autocomplete="username"
+        >
+
+        <input
+            class="champ"
+            type="password"
+            id="motDePasse"
+            placeholder="Ton code secret"
+            maxlength="50"
+            autocomplete="current-password"
+        >
+
+        <button
+            class="btn-principal"
+            id="btnConnexion"
+        >
+            Se connecter
+        </button>
+
+        <button
+            class="btn-secondaire"
+            id="btnInscription"
+        >
+            Créer un compte
+        </button>
+
+        <p id="erreur"></p>
+
+        <p id="succes"></p>
+
     </div>
 
-    <h1>Bienvenue sur Chat</h1>
-
-    <p class="sous-titre">
-        Connecte-toi avec ton pseudo et ton code secret.
-    </p>
-
-    <input
-        class="champ"
-        type="text"
-        id="pseudo"
-        placeholder="Ton pseudo"
-        maxlength="20"
-        autocomplete="username"
-    >
-
-    <input
-        class="champ"
-        type="password"
-        id="motDePasse"
-        placeholder="Ton code secret"
-        maxlength="50"
-        autocomplete="current-password"
-    >
-
-    <button
-        class="btn-principal"
-        id="btnConnexion"
-    >
-        Se connecter
-    </button>
-
-    <button
-        class="btn-secondaire"
-        id="btnInscription"
-    >
-        Créer un compte
-    </button>
-
-    <p id="erreur"></p>
-
-    <p id="succes"></p>
-
-</div>
-```
-
 </section>
+
 
 <!-- ========================================================
      APPLICATION
@@ -860,7 +1063,6 @@ header {
 
 <section id="application">
 
-```
 <header>
 
     <div class="logo-chat">
@@ -898,19 +1100,25 @@ header {
             Menu
         </p>
 
-        <button id="btnAccueil">
+
+        <button
+            id="btnAccueil"
+            class="actif"
+        >
             <span>🏠</span>
             <span>Accueil</span>
         </button>
+
 
         <button id="btnDiscussion">
             <span>💬</span>
             <span>Discussion</span>
         </button>
 
+
         <button id="btnAmis">
             <span>👥</span>
-            <span>Amis</span>
+            <span>Potes</span>
         </button>
 
 
@@ -965,6 +1173,7 @@ header {
 
         <div
             class="zone-envoi"
+            id="zoneEnvoi"
             style="display: none;"
         >
 
@@ -986,9 +1195,9 @@ header {
     </main>
 
 </div>
-```
 
 </section>
+
 
 <script>
 
@@ -1001,6 +1210,7 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
     "sb_publishable_qd9EbA110P3SerFO3iq2iQ_cAgPzzGi";
+
 
 const client =
     window.supabase.createClient(
@@ -1020,6 +1230,12 @@ let pseudoActuel = "";
 let canalMessages = null;
 
 let canalPresence = null;
+
+let canalMessagesPrives = null;
+
+let conversationActuelle = null;
+
+let utilisateurPriveActuel = null;
 
 
 /* =========================================================
@@ -1069,11 +1285,20 @@ const descriptionPage =
     document.getElementById("descriptionPage");
 
 const zoneEnvoi =
-    document.querySelector(".zone-envoi");
+    document.getElementById("zoneEnvoi");
+
+const btnAccueil =
+    document.getElementById("btnAccueil");
+
+const btnDiscussion =
+    document.getElementById("btnDiscussion");
+
+const btnAmis =
+    document.getElementById("btnAmis");
 
 
 /* =========================================================
-   MESSAGES
+   MESSAGES D'INFORMATION
 ========================================================= */
 
 function afficherErreur(message) {
@@ -1207,9 +1432,13 @@ async function inscrire() {
     } = await client
         .from("profils")
         .insert({
+
             id: nouvelId,
+
             pseudo: pseudo,
+
             code: code
+
         });
 
 
@@ -1255,7 +1484,9 @@ inputMotDePasse.addEventListener(
     function(event) {
 
         if (event.key === "Enter") {
+
             connecter();
+
         }
 
     }
@@ -1360,8 +1591,11 @@ async function ouvrirApplication(profil) {
     localStorage.setItem(
         "compte_chat",
         JSON.stringify({
+
             id: profil.id,
+
             pseudo: profil.pseudo
+
         })
     );
 
@@ -1390,7 +1624,7 @@ async function ouvrirApplication(profil) {
 
 
 /* =========================================================
-   PRESENCE
+   PRESENCE EN LIGNE / HORS LIGNE
 ========================================================= */
 
 async function demarrerPresence() {
@@ -1416,9 +1650,14 @@ async function demarrerPresence() {
             "presence-chat",
             {
                 config: {
+
                     presence: {
-                        key: utilisateur.id
+
+                        key:
+                            utilisateur.id
+
                     }
+
                 }
             }
         );
@@ -1496,11 +1735,14 @@ async function demarrerPresence() {
 
                 await canalPresence.track({
 
-                    id: utilisateur.id,
+                    id:
+                        utilisateur.id,
 
-                    pseudo: utilisateur.pseudo
+                    pseudo:
+                        utilisateur.pseudo
 
                 });
+
 
                 afficherUtilisateurs();
 
@@ -1513,7 +1755,66 @@ async function demarrerPresence() {
 
 
 /* =========================================================
-   UTILISATEURS
+   RECUPERER LES IDS EN LIGNE
+========================================================= */
+
+function recupererIdsConnectes() {
+
+    const ids =
+        new Set();
+
+
+    if (!canalPresence) {
+        return ids;
+    }
+
+
+    const state =
+        canalPresence.presenceState();
+
+
+    Object.keys(state).forEach(
+        function(key) {
+
+            const presences =
+                state[key];
+
+
+            if (
+                Array.isArray(presences)
+            ) {
+
+                presences.forEach(
+                    function(presence) {
+
+                        if (
+                            presence.id
+                        ) {
+
+                            ids.add(
+                                String(
+                                    presence.id
+                                )
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+
+        }
+    );
+
+
+    return ids;
+
+}
+
+
+/* =========================================================
+   ACCUEIL - UTILISATEURS
 ========================================================= */
 
 async function afficherUtilisateurs() {
@@ -1524,9 +1825,11 @@ async function afficherUtilisateurs() {
 
 
     listeMessages.innerHTML = `
+
         <div class="message-vide">
             Chargement des utilisateurs...
         </div>
+
     `;
 
 
@@ -1536,9 +1839,12 @@ async function afficherUtilisateurs() {
     } = await client
         .from("profils")
         .select("id, pseudo")
-        .order("pseudo", {
-            ascending: true
-        });
+        .order(
+            "pseudo",
+            {
+                ascending: true
+            }
+        );
 
 
     if (error) {
@@ -1546,56 +1852,19 @@ async function afficherUtilisateurs() {
         console.error(error);
 
         listeMessages.innerHTML = `
+
             <div class="message-vide">
                 Impossible de charger les utilisateurs.
             </div>
+
         `;
 
         return;
     }
 
 
-    const presenceState =
-        canalPresence.presenceState();
-
-
     const idsConnectes =
-        new Set();
-
-
-    Object.keys(
-        presenceState
-    ).forEach(function(key) {
-
-        const presences =
-            presenceState[key];
-
-
-        if (
-            Array.isArray(presences)
-        ) {
-
-            presences.forEach(
-                function(presence) {
-
-                    if (
-                        presence.id
-                    ) {
-
-                        idsConnectes.add(
-                            String(
-                                presence.id
-                            )
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-
-    });
+        recupererIdsConnectes();
 
 
     const connectes = [];
@@ -1631,10 +1900,6 @@ async function afficherUtilisateurs() {
     listeMessages.innerHTML = "";
 
 
-    /* =====================================================
-       EN-TETE
-    ====================================================== */
-
     const accueilEntete =
         document.createElement("div");
 
@@ -1654,6 +1919,7 @@ async function afficherUtilisateurs() {
 
     compteur.className =
         "compteur-connectes";
+
 
     compteur.textContent =
         "🟢 " +
@@ -1680,9 +1946,9 @@ async function afficherUtilisateurs() {
     );
 
 
-    /* =====================================================
-       SECTION CONNECTES
-    ====================================================== */
+    /* -----------------------------------------------------
+       EN LIGNE
+    ----------------------------------------------------- */
 
     const sectionConnectes =
         document.createElement("section");
@@ -1710,9 +1976,11 @@ async function afficherUtilisateurs() {
     ) {
 
         grilleConnectes.innerHTML = `
+
             <div class="message-vide">
                 Personne n'est actuellement connecté.
             </div>
+
         `;
 
     } else {
@@ -1721,10 +1989,13 @@ async function afficherUtilisateurs() {
             function(profil) {
 
                 grilleConnectes.appendChild(
+
                     creerCarteUtilisateur(
                         profil,
+                        true,
                         true
                     )
+
                 );
 
             }
@@ -1747,9 +2018,9 @@ async function afficherUtilisateurs() {
     );
 
 
-    /* =====================================================
-       SECTION HORS LIGNE
-    ====================================================== */
+    /* -----------------------------------------------------
+       HORS LIGNE
+    ----------------------------------------------------- */
 
     const sectionDeconnectes =
         document.createElement("section");
@@ -1777,9 +2048,11 @@ async function afficherUtilisateurs() {
     ) {
 
         grilleDeconnectes.innerHTML = `
+
             <div class="message-vide">
                 Tous les utilisateurs sont en ligne.
             </div>
+
         `;
 
     } else {
@@ -1788,10 +2061,13 @@ async function afficherUtilisateurs() {
             function(profil) {
 
                 grilleDeconnectes.appendChild(
+
                     creerCarteUtilisateur(
                         profil,
-                        false
+                        false,
+                        true
                     )
+
                 );
 
             }
@@ -1822,7 +2098,8 @@ async function afficherUtilisateurs() {
 
 function creerCarteUtilisateur(
     profil,
-    connecte
+    connecte,
+    afficherBouton
 ) {
 
     const carte =
@@ -1839,31 +2116,20 @@ function creerCarteUtilisateur(
         "avatar-utilisateur";
 
 
-    const premiereLettre =
+    avatar.textContent =
         profil.pseudo
             .charAt(0)
             .toUpperCase();
-
-
-    avatar.textContent =
-        premiereLettre;
 
 
     const point =
         document.createElement("div");
 
 
-    if (connecte) {
-
-        point.className =
-            "point-en-ligne";
-
-    } else {
-
-        point.className =
-            "point-hors-ligne";
-
-    }
+    point.className =
+        connecte
+            ? "point-en-ligne"
+            : "point-hors-ligne";
 
 
     avatar.appendChild(
@@ -1894,10 +2160,11 @@ function creerCarteUtilisateur(
     statut.className =
         "statut-utilisateur";
 
+
     statut.textContent =
         connecte
-            ? "En ligne"
-            : "Hors ligne";
+            ? "🟢 En ligne"
+            : "⚫ Hors ligne";
 
 
     infos.appendChild(
@@ -1918,21 +2185,63 @@ function creerCarteUtilisateur(
     );
 
 
+    /*
+       On ne met pas le bouton "Parler"
+       sur notre propre compte.
+    */
+
+    if (
+        afficherBouton &&
+        String(profil.id) !==
+        String(utilisateur.id)
+    ) {
+
+        const bouton =
+            document.createElement("button");
+
+        bouton.className =
+            "btn-parler";
+
+        bouton.textContent =
+            "💬 Parler";
+
+
+        bouton.addEventListener(
+            "click",
+            function() {
+
+                ouvrirDiscussionPrivee(
+                    profil
+                );
+
+            }
+        );
+
+
+        carte.appendChild(
+            bouton
+        );
+
+    }
+
+
     return carte;
 
 }
 
 
 /* =========================================================
-   MESSAGES
+   DISCUSSION PUBLIQUE
 ========================================================= */
 
 async function chargerMessages() {
 
     listeMessages.innerHTML = `
+
         <div class="message-vide">
             Chargement des messages...
         </div>
+
     `;
 
 
@@ -1942,21 +2251,26 @@ async function chargerMessages() {
     } = await client
         .from("messages")
         .select("*")
-        .order("date_envoi", {
-            ascending: true
-        })
+        .order(
+            "date_envoi",
+            {
+                ascending: true
+            }
+        )
         .limit(100);
 
 
     if (error) {
 
+        console.error(error);
+
         listeMessages.innerHTML = `
+
             <div class="message-vide">
                 Impossible de charger les messages.
             </div>
-        `;
 
-        console.error(error);
+        `;
 
         return;
     }
@@ -1971,9 +2285,11 @@ async function chargerMessages() {
     ) {
 
         listeMessages.innerHTML = `
+
             <div class="message-vide">
                 Aucun message pour le moment.
             </div>
+
         `;
 
         return;
@@ -1991,7 +2307,7 @@ async function chargerMessages() {
 
 
 /* =========================================================
-   AFFICHER MESSAGE
+   AFFICHER MESSAGE PUBLIC
 ========================================================= */
 
 function afficherMessage(message) {
@@ -2030,7 +2346,9 @@ function afficherMessage(message) {
         "date";
 
 
-    if (message.date_envoi) {
+    if (
+        message.date_envoi
+    ) {
 
         date.textContent =
             new Date(
@@ -2063,7 +2381,7 @@ function afficherMessage(message) {
 
 
 /* =========================================================
-   ENVOYER MESSAGE
+   ENVOYER MESSAGE PUBLIC
 ========================================================= */
 
 btnEnvoyer.addEventListener(
@@ -2100,6 +2418,23 @@ async function envoyerMessage() {
 
 
     if (!utilisateur) {
+        return;
+    }
+
+
+    /*
+       Si on est dans une conversation privée,
+       on envoie un message privé.
+    */
+
+    if (
+        conversationActuelle
+    ) {
+
+        await envoyerMessagePrive(
+            contenu
+        );
+
         return;
     }
 
@@ -2147,7 +2482,7 @@ async function envoyerMessage() {
 
 
 /* =========================================================
-   TEMPS REEL MESSAGES
+   TEMPS REEL PUBLIC
 ========================================================= */
 
 function ecouterMessages() {
@@ -2174,7 +2509,8 @@ function ecouterMessages() {
                     if (
                         titrePage.textContent.includes(
                             "Discussion"
-                        )
+                        ) &&
+                        !conversationActuelle
                     ) {
 
                         afficherMessage(
@@ -2193,6 +2529,1074 @@ function ecouterMessages() {
 
 
 /* =========================================================
+   ACCUEIL
+========================================================= */
+
+btnAccueil.addEventListener(
+    "click",
+    afficherAccueil
+);
+
+
+async function afficherAccueil() {
+
+    fermerConversationPrivee();
+
+    changerBoutonActif(
+        btnAccueil
+    );
+
+
+    titrePage.textContent =
+        "🏠 Accueil";
+
+
+    descriptionPage.textContent =
+        "Voici les personnes présentes sur Chat.";
+
+
+    zoneEnvoi.style.display =
+        "none";
+
+
+    await afficherUtilisateurs();
+
+}
+
+
+/* =========================================================
+   DISCUSSION PUBLIQUE
+========================================================= */
+
+btnDiscussion.addEventListener(
+    "click",
+    afficherDiscussion
+);
+
+
+async function afficherDiscussion() {
+
+    fermerConversationPrivee();
+
+    changerBoutonActif(
+        btnDiscussion
+    );
+
+
+    titrePage.textContent =
+        "💬 Discussion générale";
+
+
+    descriptionPage.textContent =
+        "Parle avec tous tes potes.";
+
+
+    zoneEnvoi.style.display =
+        "flex";
+
+
+    await chargerMessages();
+
+
+    ecouterMessages();
+
+
+    allerEnBas();
+
+}
+
+
+/* =========================================================
+   POTES
+========================================================= */
+
+btnAmis.addEventListener(
+    "click",
+    afficherPotes
+);
+
+
+async function afficherPotes() {
+
+    fermerConversationPrivee();
+
+    changerBoutonActif(
+        btnAmis
+    );
+
+
+    titrePage.textContent =
+        "👥 Potes";
+
+
+    descriptionPage.textContent =
+        "Choisis une personne pour lui parler en privé.";
+
+
+    zoneEnvoi.style.display =
+        "none";
+
+
+    listeMessages.innerHTML = `
+
+        <div class="zone-recherche">
+
+            <input
+                class="champ"
+                id="recherchePotes"
+                type="text"
+                placeholder="🔎 Rechercher un pseudo..."
+                autocomplete="off"
+            >
+
+        </div>
+
+        <div
+            id="listePotes"
+            class="grille-utilisateurs"
+        >
+
+            <div class="message-vide">
+                Chargement...
+            </div>
+
+        </div>
+
+    `;
+
+
+    await chargerPotes();
+
+}
+
+
+/* =========================================================
+   CHARGER POTES
+========================================================= */
+
+async function chargerPotes() {
+
+    const listePotes =
+        document.getElementById(
+            "listePotes"
+        );
+
+
+    if (!listePotes) {
+        return;
+    }
+
+
+    const {
+        data: profils,
+        error
+    } = await client
+        .from("profils")
+        .select("id, pseudo")
+        .order(
+            "pseudo",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        listePotes.innerHTML = `
+
+            <div class="message-vide">
+                Impossible de charger les utilisateurs.
+                <br><br>
+                ${error.message}
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    afficherListePotes(
+        profils
+    );
+
+
+    const recherche =
+        document.getElementById(
+            "recherchePotes"
+        );
+
+
+    if (recherche) {
+
+        recherche.addEventListener(
+            "input",
+            function() {
+
+                const rechercheTexte =
+                    recherche.value
+                        .trim()
+                        .toLowerCase();
+
+
+                const resultats =
+                    profils.filter(
+                        function(profil) {
+
+                            return profil.pseudo
+                                .toLowerCase()
+                                .includes(
+                                    rechercheTexte
+                                );
+
+                        }
+                    );
+
+
+                afficherListePotes(
+                    resultats
+                );
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   AFFICHER LISTE POTES
+========================================================= */
+
+function afficherListePotes(
+    profils
+) {
+
+    const listePotes =
+        document.getElementById(
+            "listePotes"
+        );
+
+
+    if (!listePotes) {
+        return;
+    }
+
+
+    listePotes.innerHTML = "";
+
+
+    const idsConnectes =
+        recupererIdsConnectes();
+
+
+    const autres =
+        profils.filter(
+            function(profil) {
+
+                return String(profil.id) !==
+                    String(utilisateur.id);
+
+            }
+        );
+
+
+    if (
+        autres.length === 0
+    ) {
+
+        listePotes.innerHTML = `
+
+            <div class="message-vide">
+                Aucun autre utilisateur trouvé.
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    autres.forEach(
+        function(profil) {
+
+            const connecte =
+                idsConnectes.has(
+                    String(profil.id)
+                );
+
+
+            const carte =
+                creerCarteUtilisateur(
+                    profil,
+                    connecte,
+                    true
+                );
+
+
+            listePotes.appendChild(
+                carte
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   OUVRIR DISCUSSION PRIVEE
+========================================================= */
+
+async function ouvrirDiscussionPrivee(
+    profil
+) {
+
+    if (!utilisateur) {
+        return;
+    }
+
+
+    utilisateurPriveActuel =
+        profil;
+
+
+    conversationActuelle =
+        null;
+
+
+    zoneEnvoi.style.display =
+        "flex";
+
+
+    titrePage.textContent =
+        "💬 @" + profil.pseudo;
+
+
+    descriptionPage.textContent =
+        "Conversation privée";
+
+
+    listeMessages.innerHTML = `
+
+        <div class="message-vide">
+            Ouverture de la conversation...
+        </div>
+
+    `;
+
+
+    changerBoutonActif(
+        null
+    );
+
+
+    const conversation =
+        await trouverOuCreerConversation(
+            utilisateur.id,
+            profil.id
+        );
+
+
+    if (!conversation) {
+
+        zoneEnvoi.style.display =
+            "none";
+
+        return;
+    }
+
+
+    conversationActuelle =
+        conversation;
+
+
+    afficherEnteteConversation(
+        profil
+    );
+
+
+    await chargerMessagesPrives(
+        conversation.id
+    );
+
+
+    ecouterMessagesPrives(
+        conversation.id
+    );
+
+
+    allerEnBas();
+
+
+    inputMessage.focus();
+
+}
+
+
+/* =========================================================
+   TROUVER OU CREER CONVERSATION
+========================================================= */
+
+async function trouverOuCreerConversation(
+    idUtilisateur1,
+    idUtilisateur2
+) {
+
+    /*
+       On cherche d'abord dans un sens.
+    */
+
+    let {
+        data: conversation,
+        error
+    } = await client
+        .from("conversations_privees")
+        .select("*")
+        .eq(
+            "utilisateur1",
+            idUtilisateur1
+        )
+        .eq(
+            "utilisateur2",
+            idUtilisateur2
+        )
+        .maybeSingle();
+
+
+    if (error) {
+
+        afficherErreurPrivee(
+            error
+        );
+
+        return null;
+    }
+
+
+    if (conversation) {
+
+        return conversation;
+
+    }
+
+
+    /*
+       Puis dans l'autre sens.
+    */
+
+    const resultatInverse =
+        await client
+            .from("conversations_privees")
+            .select("*")
+            .eq(
+                "utilisateur1",
+                idUtilisateur2
+            )
+            .eq(
+                "utilisateur2",
+                idUtilisateur1
+            )
+            .maybeSingle();
+
+
+    if (
+        resultatInverse.error
+    ) {
+
+        afficherErreurPrivee(
+            resultatInverse.error
+        );
+
+        return null;
+    }
+
+
+    if (
+        resultatInverse.data
+    ) {
+
+        return resultatInverse.data;
+
+    }
+
+
+    /*
+       Aucune conversation :
+       on la crée.
+    */
+
+    const resultatCreation =
+        await client
+            .from("conversations_privees")
+            .insert({
+
+                utilisateur1:
+                    idUtilisateur1,
+
+                utilisateur2:
+                    idUtilisateur2
+
+            })
+            .select()
+            .single();
+
+
+    if (
+        resultatCreation.error
+    ) {
+
+        afficherErreurPrivee(
+            resultatCreation.error
+        );
+
+        return null;
+    }
+
+
+    return resultatCreation.data;
+
+}
+
+
+/* =========================================================
+   ERREUR PRIVEE
+========================================================= */
+
+function afficherErreurPrivee(
+    error
+) {
+
+    console.error(error);
+
+
+    listeMessages.innerHTML = `
+
+        <div class="message-vide">
+
+            Impossible d'ouvrir cette conversation.
+
+            <br><br>
+
+            <strong>
+                ${error.message}
+            </strong>
+
+            <br><br>
+
+            Vérifie que les tables
+            <strong>conversations_privees</strong>
+            et
+            <strong>messages_prives</strong>
+            existent dans Supabase.
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   ENTETE CONVERSATION
+========================================================= */
+
+function afficherEnteteConversation(
+    profil
+) {
+
+    listeMessages.innerHTML = "";
+
+
+    const entete =
+        document.createElement("div");
+
+    entete.className =
+        "en-tete-prive";
+
+
+    const retour =
+        document.createElement("button");
+
+    retour.className =
+        "btn-retour";
+
+    retour.textContent =
+        "← Retour";
+
+
+    retour.addEventListener(
+        "click",
+        afficherPotes
+    );
+
+
+    const info =
+        document.createElement("div");
+
+    info.className =
+        "info-prive";
+
+
+    const nom =
+        document.createElement("div");
+
+    nom.className =
+        "info-prive-nom";
+
+    nom.textContent =
+        "@" + profil.pseudo;
+
+
+    const statut =
+        document.createElement("div");
+
+    statut.className =
+        "info-prive-statut";
+
+
+    const idsConnectes =
+        recupererIdsConnectes();
+
+
+    if (
+        idsConnectes.has(
+            String(profil.id)
+        )
+    ) {
+
+        statut.textContent =
+            "🟢 En ligne";
+
+    } else {
+
+        statut.textContent =
+            "⚫ Hors ligne";
+
+    }
+
+
+    info.appendChild(
+        nom
+    );
+
+    info.appendChild(
+        statut
+    );
+
+
+    entete.appendChild(
+        retour
+    );
+
+    entete.appendChild(
+        info
+    );
+
+
+    listeMessages.appendChild(
+        entete
+    );
+
+}
+
+
+/* =========================================================
+   CHARGER MESSAGES PRIVES
+========================================================= */
+
+async function chargerMessagesPrives(
+    conversationId
+) {
+
+    const entete =
+        document.querySelector(
+            ".en-tete-prive"
+        );
+
+
+    const chargement =
+        document.createElement("div");
+
+    chargement.className =
+        "message-vide";
+
+    chargement.textContent =
+        "Chargement des messages...";
+
+
+    listeMessages.appendChild(
+        chargement
+    );
+
+
+    const {
+        data,
+        error
+    } = await client
+        .from("messages_prives")
+        .select("*")
+        .eq(
+            "conversation_id",
+            conversationId
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        )
+        .limit(100);
+
+
+    chargement.remove();
+
+
+    if (error) {
+
+        console.error(error);
+
+        const erreurElement =
+            document.createElement("div");
+
+        erreurElement.className =
+            "message-vide";
+
+        erreurElement.textContent =
+            "Impossible de charger les messages : " +
+            error.message;
+
+
+        listeMessages.appendChild(
+            erreurElement
+        );
+
+        return;
+    }
+
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        const vide =
+            document.createElement("div");
+
+        vide.className =
+            "message-vide";
+
+        vide.textContent =
+            "Aucun message. Commence la conversation !";
+
+
+        listeMessages.appendChild(
+            vide
+        );
+
+        return;
+    }
+
+
+    data.forEach(
+        afficherMessagePrive
+    );
+
+}
+
+
+/* =========================================================
+   AFFICHER MESSAGE PRIVE
+========================================================= */
+
+function afficherMessagePrive(
+    message
+) {
+
+    const bloc =
+        document.createElement("div");
+
+
+    const estMoi =
+        String(message.pseudo) ===
+        String(pseudoActuel);
+
+
+    bloc.className =
+        estMoi
+            ? "message-prive moi"
+            : "message-prive";
+
+
+    const bulle =
+        document.createElement("div");
+
+    bulle.className =
+        "bulle-privee";
+
+
+    const nom =
+        document.createElement("div");
+
+    nom.className =
+        "nom-prive";
+
+    nom.textContent =
+        estMoi
+            ? "Toi"
+            : "@" + message.pseudo;
+
+
+    const texte =
+        document.createElement("div");
+
+    texte.className =
+        "texte-prive";
+
+    texte.textContent =
+        message.text;
+
+
+    const date =
+        document.createElement("div");
+
+    date.className =
+        "date-prive";
+
+
+    if (
+        message.created_at
+    ) {
+
+        date.textContent =
+            new Date(
+                message.created_at
+            ).toLocaleString(
+                "fr-FR"
+            );
+
+    }
+
+
+    bulle.appendChild(
+        nom
+    );
+
+    bulle.appendChild(
+        texte
+    );
+
+    bulle.appendChild(
+        date
+    );
+
+
+    bloc.appendChild(
+        bulle
+    );
+
+
+    listeMessages.appendChild(
+        bloc
+    );
+
+}
+
+
+/* =========================================================
+   ENVOYER MESSAGE PRIVE
+========================================================= */
+
+async function envoyerMessagePrive(
+    contenu
+) {
+
+    if (
+        !conversationActuelle ||
+        !utilisateurPriveActuel
+    ) {
+
+        return;
+
+    }
+
+
+    btnEnvoyer.disabled = true;
+
+
+    const {
+        error
+    } = await client
+        .from("messages_prives")
+        .insert({
+
+            conversation_id:
+                conversationActuelle.id,
+
+            pseudo:
+                pseudoActuel,
+
+            text:
+                contenu
+
+        });
+
+
+    if (error) {
+
+        alert(
+            "Impossible d'envoyer le message privé : " +
+            error.message
+        );
+
+        console.error(error);
+
+    } else {
+
+        inputMessage.value = "";
+
+    }
+
+
+    btnEnvoyer.disabled = false;
+
+}
+
+
+/* =========================================================
+   TEMPS REEL MESSAGES PRIVES
+========================================================= */
+
+function ecouterMessagesPrives(
+    conversationId
+) {
+
+    if (canalMessagesPrives) {
+
+        client.removeChannel(
+            canalMessagesPrives
+        );
+
+        canalMessagesPrives =
+            null;
+
+    }
+
+
+    canalMessagesPrives =
+        client
+            .channel(
+                "conversation-privee-" +
+                conversationId
+            )
+            .on(
+                "postgres_changes",
+                {
+
+                    event: "INSERT",
+
+                    schema: "public",
+
+                    table: "messages_prives",
+
+                    filter:
+                        "conversation_id=eq." +
+                        conversationId
+
+                },
+                function(payload) {
+
+                    if (
+                        conversationActuelle &&
+                        String(
+                            conversationActuelle.id
+                        ) ===
+                        String(
+                            conversationId
+                        )
+                    ) {
+
+                        afficherMessagePrive(
+                            payload.new
+                        );
+
+                        allerEnBas();
+
+                    }
+
+                }
+            )
+            .subscribe();
+
+}
+
+
+/* =========================================================
+   FERMER CONVERSATION PRIVEE
+========================================================= */
+
+function fermerConversationPrivee() {
+
+    conversationActuelle =
+        null;
+
+    utilisateurPriveActuel =
+        null;
+
+
+    if (
+        canalMessagesPrives
+    ) {
+
+        client.removeChannel(
+            canalMessagesPrives
+        );
+
+        canalMessagesPrives =
+            null;
+
+    }
+
+}
+
+
+/* =========================================================
+   BOUTON ACTIF
+========================================================= */
+
+function changerBoutonActif(
+    bouton
+) {
+
+    btnAccueil.classList.remove(
+        "actif"
+    );
+
+    btnDiscussion.classList.remove(
+        "actif"
+    );
+
+    btnAmis.classList.remove(
+        "actif"
+    );
+
+
+    if (bouton) {
+
+        bouton.classList.add(
+            "actif"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
    DESCENDRE EN BAS
 ========================================================= */
 
@@ -2202,95 +3606,6 @@ function allerEnBas() {
         listeMessages.scrollHeight;
 
 }
-
-
-/* =========================================================
-   ACCUEIL
-========================================================= */
-
-document.getElementById(
-    "btnAccueil"
-).addEventListener(
-    "click",
-    afficherAccueil
-);
-
-
-function afficherAccueil() {
-
-    titrePage.textContent =
-        "🏠 Accueil";
-
-    descriptionPage.textContent =
-        "Voici les personnes présentes sur Chat.";
-
-    zoneEnvoi.style.display =
-        "none";
-
-    afficherUtilisateurs();
-
-}
-
-
-/* =========================================================
-   DISCUSSION
-========================================================= */
-
-document.getElementById(
-    "btnDiscussion"
-).addEventListener(
-    "click",
-    afficherDiscussion
-);
-
-
-async function afficherDiscussion() {
-
-    titrePage.textContent =
-        "💬 Discussion générale";
-
-    descriptionPage.textContent =
-        "Parle avec tes potes.";
-
-    zoneEnvoi.style.display =
-        "flex";
-
-    await chargerMessages();
-
-    ecouterMessages();
-
-    allerEnBas();
-
-}
-
-
-/* =========================================================
-   AMIS
-========================================================= */
-
-document.getElementById(
-    "btnAmis"
-).addEventListener(
-    "click",
-    function() {
-
-        titrePage.textContent =
-            "👥 Amis";
-
-        descriptionPage.textContent =
-            "Tes amis sur Chat.";
-
-        listeMessages.innerHTML = `
-            <div class="message-vide">
-                La fonctionnalité Amis sera ajoutée prochainement.
-            </div>
-        `;
-
-        zoneEnvoi.style.display =
-            "none";
-
-    }
-);
 
 
 /* =========================================================
@@ -2304,9 +3619,12 @@ document.getElementById(
     async function() {
 
 
-        /* -----------------------------------------------
+        fermerConversationPrivee();
+
+
+        /*
            PRESENCE
-        ------------------------------------------------ */
+        */
 
         if (canalPresence) {
 
@@ -2325,14 +3643,15 @@ document.getElementById(
                 canalPresence
             );
 
-            canalPresence = null;
+            canalPresence =
+                null;
 
         }
 
 
-        /* -----------------------------------------------
-           MESSAGES
-        ------------------------------------------------ */
+        /*
+           MESSAGES PUBLICS
+        */
 
         if (canalMessages) {
 
@@ -2340,18 +3659,21 @@ document.getElementById(
                 canalMessages
             );
 
-            canalMessages = null;
+            canalMessages =
+                null;
 
         }
 
 
-        /* -----------------------------------------------
+        /*
            RESET
-        ------------------------------------------------ */
+        */
 
-        utilisateur = null;
+        utilisateur =
+            null;
 
-        pseudoActuel = "";
+        pseudoActuel =
+            "";
 
 
         localStorage.removeItem(
@@ -2366,11 +3688,15 @@ document.getElementById(
             "flex";
 
 
-        inputPseudo.value = "";
+        inputPseudo.value =
+            "";
 
-        inputMotDePasse.value = "";
+        inputMotDePasse.value =
+            "";
 
-        inputMessage.value = "";
+        inputMessage.value =
+            "";
+
 
         listeMessages.innerHTML =
             "";
@@ -2410,14 +3736,23 @@ async function verifierConnexionSauvegardee() {
 
 
         if (
-            !compte.id ||
-            !compte.pseudo
+            !compte.id
         ) {
+
+            localStorage.removeItem(
+                "compte_chat"
+            );
 
             return;
 
         }
 
+
+        /*
+           IMPORTANT :
+           On utilise surtout l'ID interne.
+           Le pseudo est récupéré depuis Supabase.
+        */
 
         const {
             data: profil,
@@ -2425,8 +3760,10 @@ async function verifierConnexionSauvegardee() {
         } = await client
             .from("profils")
             .select("*")
-            .eq("id", compte.id)
-            .eq("pseudo", compte.pseudo)
+            .eq(
+                "id",
+                compte.id
+            )
             .maybeSingle();
 
 
