@@ -3322,8 +3322,8 @@ function afficherMessagePrive(
 
 
     const estMoi =
-        String(message.pseudo) ===
-        String(pseudoActuel);
+        String(message.auteur_id) ===
+        String(utilisateur.id);
 
 
     bloc.className =
@@ -3443,7 +3443,7 @@ async function envoyerMessagePrive(
             pseudo:
                 pseudoActuel,
 
-            texte:
+            text:
                 contenu
 
         });
