@@ -4111,11 +4111,7 @@ async function envoyerImagePrive(
 btnImage.addEventListener(
     "click",
     function() {
-        if (
-            !conversationActuelle ||
-            !utilisateurPriveActuel
-        ) {
-            alert("Ouvre d'abord une conversation privée.");
+        if (!utilisateur) {
             return;
         }
 
