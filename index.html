@@ -842,6 +842,44 @@ header {
     background: var(--primaire-hover);
 }
 
+#btnVocal {
+    width: 48px;
+    min-width: 48px;
+    padding: 0;
+    background: #ef4444;
+    color: white;
+    border-radius: 11px;
+    font-size: 20px;
+}
+
+#btnVocal:hover {
+    filter: brightness(0.95);
+}
+
+#btnVocal.enregistrement {
+    background: #111827;
+    animation: pulseVocal 1s infinite;
+}
+
+@keyframes pulseVocal {
+    50% {
+        transform: scale(1.06);
+    }
+}
+
+#statutVocal {
+    align-self: center;
+    color: var(--texte-secondaire);
+    font-size: 12px;
+    min-width: 85px;
+}
+
+.audio-prive {
+    width: min(280px, 100%);
+    display: block;
+    margin-top: 5px;
+}
+
 
 /* =========================================================
    RECHERCHE POTES
@@ -1186,6 +1224,16 @@ header {
                 autocomplete="off"
             >
 
+            <button
+                id="btnVocal"
+                title="Enregistrer un vocal"
+                type="button"
+            >
+                🎙️
+            </button>
+
+            <span id="statutVocal"></span>
+
             <button id="btnEnvoyer">
                 Envoyer
             </button>
@@ -1277,6 +1325,21 @@ const btnInscription =
 
 const btnEnvoyer =
     document.getElementById("btnEnvoyer");
+
+const btnVocal =
+    document.getElementById("btnVocal");
+
+const statutVocal =
+    document.getElementById("statutVocal");
+
+let mediaRecorder =
+    null;
+
+let morceauxVocal =
+    [];
+
+let enregistrementVocal =
+    false;
 
 const titrePage =
     document.getElementById("titrePage");
@@ -3349,14 +3412,46 @@ function afficherMessagePrive(
         "@" + message.pseudo;
 
 
-    const texte =
-        document.createElement("div");
+    if (
+        message.type_message === "vocal" &&
+        message.audio_url
+    ) {
 
-    texte.className =
-        "texte-prive";
+        const audio =
+            document.createElement("audio");
 
-    texte.textContent =
-        message.texte;
+        audio.className =
+            "audio-prive";
+
+        audio.controls =
+            true;
+
+        audio.preload =
+            "metadata";
+
+        audio.src =
+            message.audio_url;
+
+        bulle.appendChild(
+            audio
+        );
+
+    } else {
+
+        const texte =
+            document.createElement("div");
+
+        texte.className =
+            "texte-prive";
+
+        texte.textContent =
+            message.texte || "";
+
+        bulle.appendChild(
+            texte
+        );
+
+    }
 
 
     const date =
@@ -3385,10 +3480,6 @@ function afficherMessagePrive(
     );
 
     bulle.appendChild(
-        texte
-    );
-
-    bulle.appendChild(
         date
     );
 
@@ -3403,6 +3494,12 @@ function afficherMessagePrive(
     );
 
 }
+
+
+btnVocal.addEventListener(
+    "click",
+    demarrerOuArreterVocal
+);
 
 
 /* =========================================================
@@ -3464,6 +3561,237 @@ async function envoyerMessagePrive(
 
 
     btnEnvoyer.disabled = false;
+
+}
+
+
+/* =========================================================
+   VOCAUX PRIVES
+========================================================= */
+
+async function demarrerOuArreterVocal() {
+
+    if (enregistrementVocal) {
+
+        if (mediaRecorder) {
+            mediaRecorder.stop();
+        }
+
+        return;
+    }
+
+    if (
+        !conversationActuelle ||
+        !utilisateurPriveActuel
+    ) {
+        alert("Ouvre d'abord une conversation privée.");
+        return;
+    }
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia ||
+        !window.MediaRecorder
+    ) {
+        alert("Ton navigateur ne permet pas l'enregistrement vocal.");
+        return;
+    }
+
+    try {
+
+        const flux =
+            await navigator.mediaDevices.getUserMedia({
+                audio: true
+            });
+
+        morceauxVocal = [];
+
+        mediaRecorder =
+            new MediaRecorder(flux);
+
+        enregistrementVocal =
+            true;
+
+        btnVocal.classList.add(
+            "enregistrement"
+        );
+
+        btnVocal.textContent =
+            "⏹️";
+
+        statutVocal.textContent =
+            "Enregistrement...";
+
+        mediaRecorder.ondataavailable =
+            function(event) {
+
+                if (event.data.size > 0) {
+                    morceauxVocal.push(
+                        event.data
+                    );
+                }
+
+            };
+
+        mediaRecorder.onstop =
+            async function() {
+
+                enregistrementVocal =
+                    false;
+
+                btnVocal.classList.remove(
+                    "enregistrement"
+                );
+
+                btnVocal.textContent =
+                    "🎙️";
+
+                statutVocal.textContent =
+                    "Envoi...";
+
+                flux.getTracks().forEach(
+                    function(track) {
+                        track.stop();
+                    }
+                );
+
+                const blob =
+                    new Blob(
+                        morceauxVocal,
+                        {
+                            type:
+                                mediaRecorder.mimeType ||
+                                "audio/webm"
+                        }
+                    );
+
+                await envoyerVocalPrive(
+                    blob
+                );
+
+            };
+
+        mediaRecorder.start();
+
+    } catch (error) {
+
+        console.error(error);
+
+        statutVocal.textContent =
+            "";
+
+        alert(
+            "Impossible d'utiliser le micro : " +
+            error.message
+        );
+
+    }
+
+}
+
+
+async function envoyerVocalPrive(
+    blob
+) {
+
+    if (
+        !conversationActuelle ||
+        !utilisateur
+    ) {
+        return;
+    }
+
+    const nomFichier =
+        utilisateur.id +
+        "/" +
+        conversationActuelle.id +
+        "-" +
+        Date.now() +
+        ".webm";
+
+    try {
+
+        const resultatUpload =
+            await client
+                .storage
+                .from("vocaux")
+                .upload(
+                    nomFichier,
+                    blob,
+                    {
+                        contentType:
+                            blob.type || "audio/webm",
+                        upsert:
+                            false
+                    }
+                );
+
+        if (resultatUpload.error) {
+            throw resultatUpload.error;
+        }
+
+        const resultatUrl =
+            client
+                .storage
+                .from("vocaux")
+                .getPublicUrl(
+                    nomFichier
+                );
+
+        const audioUrl =
+            resultatUrl.data.publicUrl;
+
+        const resultatMessage =
+            await client
+                .from("messages_prives")
+                .insert({
+                    conversation_id:
+                        conversationActuelle.id,
+
+                    auteur_id:
+                        utilisateur.id,
+
+                    pseudo:
+                        pseudoActuel,
+
+                    texte:
+                        null,
+
+                    type_message:
+                        "vocal",
+
+                    audio_url:
+                        audioUrl
+                });
+
+        if (resultatMessage.error) {
+            throw resultatMessage.error;
+        }
+
+        statutVocal.textContent =
+            "Vocal envoyé";
+
+        setTimeout(
+            function() {
+                statutVocal.textContent =
+                    "";
+            },
+            1500
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        statutVocal.textContent =
+            "";
+
+        alert(
+            "Impossible d'envoyer le vocal : " +
+            error.message
+        );
+
+    }
 
 }
 
