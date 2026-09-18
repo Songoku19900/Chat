@@ -2420,72 +2420,48 @@ async function chargerMessages() {
 
 function afficherMessage(message) {
 
-    const bloc =
-        document.createElement("div");
+    const bloc = document.createElement("div");
+    bloc.className = "message";
 
-    bloc.className =
-        "message";
+    const nom = document.createElement("div");
+    nom.className = "nom";
+    nom.textContent = "@" + message.pseudo;
+    bloc.appendChild(nom);
 
-
-    const nom =
-        document.createElement("div");
-
-    nom.className =
-        "nom";
-
-    nom.textContent =
-        "@" + message.pseudo;
-
-
-    const texte =
-        document.createElement("div");
-
-    texte.className =
-        "texte";
-
-    texte.textContent =
-        message.contenu;
-
-
-    const date =
-        document.createElement("div");
-
-    date.className =
-        "date";
-
-
-    if (
-        message.date_envoi
-    ) {
-
-        date.textContent =
-            new Date(
-                message.date_envoi
-            ).toLocaleString(
-                "fr-FR"
-            );
-
+    if (message.type_message === "image" && message.image_url) {
+        const image = document.createElement("img");
+        image.className = "image-privee";
+        image.src = message.image_url;
+        image.alt = "Image envoyée par @" + message.pseudo;
+        image.loading = "lazy";
+        image.style.cursor = "pointer";
+        image.addEventListener("click", function() {
+            window.open(message.image_url, "_blank");
+        });
+        bloc.appendChild(image);
+    } else if (message.type_message === "vocal" && message.audio_url) {
+        const audio = document.createElement("audio");
+        audio.className = "audio-prive";
+        audio.controls = true;
+        audio.preload = "metadata";
+        audio.src = message.audio_url;
+        bloc.appendChild(audio);
+    } else if (message.contenu) {
+        const texte = document.createElement("div");
+        texte.className = "texte";
+        texte.textContent = message.contenu;
+        bloc.appendChild(texte);
     }
 
-
-    bloc.appendChild(
-        nom
-    );
-
-    bloc.appendChild(
-        texte
-    );
-
-    bloc.appendChild(
-        date
-    );
-
-
-    listeMessages.appendChild(
-        bloc
-    );
-
+    const date = document.createElement("div");
+    date.className = "date";
+    if (message.date_envoi) {
+        date.textContent = new Date(message.date_envoi).toLocaleString("fr-FR");
+    }
+    bloc.appendChild(date);
+    listeMessages.appendChild(bloc);
 }
+
 
 
 /* =========================================================
@@ -2563,7 +2539,10 @@ async function envoyerMessage() {
                 pseudoActuel,
 
             contenu:
-                contenu
+                contenu,
+
+            type_message:
+                "texte"
 
         });
 
@@ -3648,6 +3627,56 @@ async function envoyerMessagePrive(
 
 
 /* =========================================================
+   VOCAL PUBLIC
+========================================================= */
+
+async function envoyerVocalPublic(blob) {
+
+    if (!utilisateur) return;
+
+    try {
+        const nomFichier =
+            utilisateur.id + "/public-" + Date.now() + ".webm";
+
+        const resultatUpload = await client
+            .storage
+            .from("vocaux")
+            .upload(nomFichier, blob, {
+                contentType: blob.type || "audio/webm",
+                upsert: false
+            });
+
+        if (resultatUpload.error) throw resultatUpload.error;
+
+        const resultatUrl = client
+            .storage
+            .from("vocaux")
+            .getPublicUrl(nomFichier);
+
+        const { error } = await client
+            .from("messages")
+            .insert({
+                utilisateur_id: utilisateur.id,
+                pseudo: pseudoActuel,
+                contenu: "",
+                type_message: "vocal",
+                audio_url: resultatUrl.data.publicUrl
+            });
+
+        if (error) throw error;
+
+        statutVocal.textContent = "Vocal envoyé";
+        setTimeout(function() { statutVocal.textContent = ""; }, 1500);
+
+    } catch (error) {
+        console.error(error);
+        statutVocal.textContent = "";
+        alert("Impossible d'envoyer le vocal : " + error.message);
+    }
+}
+
+
+/* =========================================================
    VOCAUX PRIVES
 ========================================================= */
 
@@ -3662,11 +3691,12 @@ async function demarrerOuArreterVocal() {
         return;
     }
 
-    if (
-        !conversationActuelle ||
-        !utilisateurPriveActuel
-    ) {
-        alert("Ouvre d'abord une conversation privée.");
+    if (!conversationActuelle && !utilisateur) {
+        return;
+    }
+
+    if (conversationActuelle && !utilisateurPriveActuel) {
+        alert("La conversation privée n'est plus disponible.");
         return;
     }
 
@@ -3747,9 +3777,11 @@ async function demarrerOuArreterVocal() {
                         }
                     );
 
-                await envoyerVocalPrive(
-                    blob
-                );
+                if (conversationActuelle) {
+                    await envoyerVocalPrive(blob);
+                } else {
+                    await envoyerVocalPublic(blob);
+                }
 
             };
 
@@ -3886,11 +3918,12 @@ async function envoyerImagePrive(
     fichier
 ) {
 
-    if (
-        !conversationActuelle ||
-        !utilisateurPriveActuel
-    ) {
-        alert("Ouvre d'abord une conversation privée.");
+    if (!utilisateur) {
+        return;
+    }
+
+    if (conversationActuelle && !utilisateurPriveActuel) {
+        alert("La conversation privée n'est plus disponible.");
         return;
     }
 
@@ -3915,6 +3948,53 @@ async function envoyerImagePrive(
 
     statutVocal.textContent =
         "Envoi de l'image...";
+
+    if (!conversationActuelle) {
+        try {
+            const extension =
+                (fichier.name.split(".").pop() || "jpg").toLowerCase();
+            const nomFichier =
+                utilisateur.id + "/public-" + Date.now() + "." + extension;
+
+            const resultatUpload = await client
+                .storage
+                .from("images")
+                .upload(nomFichier, fichier, {
+                    contentType: fichier.type,
+                    upsert: false
+                });
+
+            if (resultatUpload.error) throw resultatUpload.error;
+
+            const resultatUrl = client
+                .storage
+                .from("images")
+                .getPublicUrl(nomFichier);
+
+            const { error } = await client
+                .from("messages")
+                .insert({
+                    utilisateur_id: utilisateur.id,
+                    pseudo: pseudoActuel,
+                    contenu: "",
+                    type_message: "image",
+                    image_url: resultatUrl.data.publicUrl
+                });
+
+            if (error) throw error;
+
+            statutVocal.textContent = "Image envoyée";
+            setTimeout(function() { statutVocal.textContent = ""; }, 1500);
+        } catch (error) {
+            console.error(error);
+            statutVocal.textContent = "";
+            alert("Impossible d'envoyer l'image : " + error.message);
+        } finally {
+            btnImage.disabled = false;
+            inputImage.value = "";
+        }
+        return;
+    }
 
     const extension =
         (
