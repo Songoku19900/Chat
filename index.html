@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="fr">
 
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,62 +10,57 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+:root {
+    --primaire: #4f46e5;
+    --primaire-clair: #eef2ff;
+    --primaire-hover: #4338ca;
+
+    --fond: #f5f7fb;
+    --blanc: #ffffff;
+
+    --texte: #1e293b;
+    --texte-secondaire: #64748b;
+
+    --bordure: #e2e8f0;
+
+    --vert: #22c55e;
+    --gris: #94a3b8;
+
+    --ombre: 0 4px 20px rgba(15, 23, 42, 0.07);
+}
+
+/* =========================================================
+   BASE
+========================================================= */
+
 * {
     box-sizing: border-box;
 }
 
+html,
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #eef2ff;
-    color: #222;
+    min-height: 100%;
 }
 
-/* =========================
-   CONNEXION
-========================= */
-
-#connexion {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--fond);
+    color: var(--texte);
 }
 
-.boite-connexion {
-    background: white;
-    padding: 30px;
-    width: 100%;
-    max-width: 400px;
-    border-radius: 18px;
-    box-shadow: 0 8px 30px #0002;
-    text-align: center;
-}
-
-.logo {
-    font-size: 45px;
-}
-
-h1 {
-    color: #4f46e5;
-}
-
+button,
 input {
-    width: 100%;
-    padding: 14px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-size: 16px;
-    margin-top: 12px;
+    font-family: inherit;
 }
 
 button {
     cursor: pointer;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 15px;
 }
 
 button:disabled {
@@ -73,359 +68,933 @@ button:disabled {
     cursor: not-allowed;
 }
 
-.btn-principal {
+/* =========================================================
+   CONNEXION
+========================================================= */
+
+#connexion {
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            #e0e7ff,
+            transparent 35%
+        ),
+        var(--fond);
+}
+
+.boite-connexion {
     width: 100%;
-    margin-top: 15px;
-    background: #4f46e5;
-    color: white;
+    max-width: 410px;
+
+    padding: 35px;
+
+    background: var(--blanc);
+
+    border: 1px solid var(--bordure);
+    border-radius: 22px;
+
+    box-shadow: var(--ombre);
+
+    text-align: center;
+}
+
+.logo-connexion {
+    width: 72px;
+    height: 72px;
+
+    margin: 0 auto 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--primaire-clair);
+
+    border-radius: 20px;
+
+    font-size: 36px;
+}
+
+.boite-connexion h1 {
+    margin: 0;
+
+    color: var(--texte);
+
+    font-size: 28px;
+}
+
+.boite-connexion .sous-titre {
+    margin: 10px 0 25px;
+
+    color: var(--texte-secondaire);
+
+    line-height: 1.5;
+}
+
+.champ {
+    width: 100%;
+
+    padding: 14px 15px;
+
+    margin-top: 12px;
+
+    border: 1px solid var(--bordure);
+    border-radius: 12px;
+
+    outline: none;
+
+    font-size: 15px;
+
+    background: #fff;
+
+    transition: 0.2s;
+}
+
+.champ:focus {
+    border-color: var(--primaire);
+
+    box-shadow:
+        0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.btn-principal,
+.btn-secondaire {
+    width: 100%;
+
+    padding: 13px 18px;
+
+    margin-top: 12px;
+
+    border-radius: 12px;
+
+    font-size: 15px;
     font-weight: bold;
+
+    transition: 0.2s;
+}
+
+.btn-principal {
+    background: var(--primaire);
+    color: white;
+}
+
+.btn-principal:hover {
+    background: var(--primaire-hover);
 }
 
 .btn-secondaire {
-    width: 100%;
+    background: var(--primaire-clair);
+    color: var(--primaire);
+}
+
+.btn-secondaire:hover {
     background: #e0e7ff;
-    color: #3730a3;
-    margin-top: 10px;
 }
 
 #erreur {
+    min-height: 20px;
+
+    margin: 15px 0 0;
+
     color: #dc2626;
-    margin-top: 15px;
+
+    font-size: 14px;
 }
 
 #succes {
+    min-height: 20px;
+
+    margin: 15px 0 0;
+
     color: #16a34a;
-    margin-top: 15px;
+
+    font-size: 14px;
 }
 
-/* =========================
+/* =========================================================
    APPLICATION
-========================= */
+========================================================= */
 
 #application {
     display: none;
+
     min-height: 100vh;
 }
 
+/* =========================================================
+   HEADER
+========================================================= */
+
 header {
-    height: 65px;
-    background: #4f46e5;
-    color: white;
+    height: 68px;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 25px;
+
+    padding: 0 24px;
+
+    background: var(--blanc);
+
+    border-bottom: 1px solid var(--bordure);
 }
 
-header h2 {
-    margin: 0;
+.logo-chat {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 21px;
+    font-weight: bold;
 }
 
-#btnDeconnexion {
-    background: white;
-    color: #4f46e5;
+.logo-chat-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--primaire);
+
+    border-radius: 11px;
+
+    color: white;
 }
 
-/* =========================
+.btn-deconnexion {
+    padding: 9px 14px;
+
+    background: #fef2f2;
+
+    color: #dc2626;
+
+    border: 1px solid #fecaca;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+}
+
+.btn-deconnexion:hover {
+    background: #fee2e2;
+}
+
+/* =========================================================
    STRUCTURE
-========================= */
+========================================================= */
 
 .conteneur {
     display: flex;
-    height: calc(100vh - 65px);
+
+    min-height: calc(100vh - 68px);
 }
 
-/* =========================
+/* =========================================================
    MENU
-========================= */
+========================================================= */
 
 .menu {
-    width: 230px;
-    background: white;
+    width: 240px;
+
+    flex-shrink: 0;
+
     padding: 20px;
-    border-right: 1px solid #ddd;
+
+    background: var(--blanc);
+
+    border-right: 1px solid var(--bordure);
+}
+
+.menu-titre {
+    margin: 0 0 12px;
+
+    color: var(--texte-secondaire);
+
+    font-size: 12px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
 .menu button {
-    display: block;
     width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 12px 13px;
+
+    margin-bottom: 7px;
+
+    background: transparent;
+
+    color: var(--texte);
+
+    border-radius: 11px;
+
     text-align: left;
-    margin-bottom: 10px;
-    background: #f1f5f9;
+
+    font-size: 14px;
 }
 
 .menu button:hover {
-    background: #e0e7ff;
+    background: var(--primaire-clair);
+    color: var(--primaire);
 }
 
-.menu p {
-    color: #64748b;
+.menu-separation {
+    height: 1px;
+
+    margin: 20px 0;
+
+    background: var(--bordure);
 }
 
-/* =========================
-   DISCUSSION
-========================= */
+.mon-compte {
+    padding: 12px;
+
+    background: #f8fafc;
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 12px;
+}
+
+.mon-compte-label {
+    margin-bottom: 5px;
+
+    color: var(--texte-secondaire);
+
+    font-size: 11px;
+}
+
+.mon-compte-pseudo {
+    font-weight: bold;
+
+    color: var(--primaire);
+
+    overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   CONTENU
+========================================================= */
 
 .discussion {
     flex: 1;
+
+    min-width: 0;
+
     display: flex;
     flex-direction: column;
-    min-width: 0;
 }
 
+/* =========================================================
+   TITRE
+========================================================= */
+
 .titre-discussion {
-    background: white;
-    padding: 20px;
-    border-bottom: 1px solid #ddd;
+    padding: 24px 28px;
+
+    background: var(--blanc);
+
+    border-bottom: 1px solid var(--bordure);
 }
 
 .titre-discussion h2 {
     margin: 0;
+
+    font-size: 22px;
 }
+
+.titre-discussion p {
+    margin: 6px 0 0;
+
+    color: var(--texte-secondaire);
+
+    font-size: 14px;
+}
+
+/* =========================================================
+   ZONE PRINCIPALE
+========================================================= */
 
 #listeMessages {
     flex: 1;
+
     overflow-y: auto;
-    padding: 20px;
+
+    padding: 25px 28px;
 }
 
-/* =========================
+/* =========================================================
+   ACCUEIL
+========================================================= */
+
+.accueil-entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+}
+
+.accueil-entete h3 {
+    margin: 0;
+
+    font-size: 18px;
+}
+
+.compteur-connectes {
+    padding: 7px 11px;
+
+    background: #ecfdf5;
+
+    color: #15803d;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.grille-utilisateurs {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(260px, 1fr));
+
+    gap: 14px;
+}
+
+.section-utilisateurs {
+    margin-bottom: 28px;
+}
+
+.section-utilisateurs h3 {
+    margin: 0 0 12px;
+
+    font-size: 16px;
+}
+
+.carte-utilisateur {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 15px;
+
+    background: var(--blanc);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 15px;
+
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+    transition: 0.2s;
+}
+
+.carte-utilisateur:hover {
+    transform: translateY(-1px);
+
+    box-shadow: var(--ombre);
+}
+
+.avatar-utilisateur {
+    position: relative;
+
+    width: 44px;
+    height: 44px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--primaire-clair);
+
+    color: var(--primaire);
+
+    border-radius: 13px;
+
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.point-en-ligne {
+    position: absolute;
+
+    right: -2px;
+    bottom: -2px;
+
+    width: 13px;
+    height: 13px;
+
+    background: var(--vert);
+
+    border: 3px solid white;
+
+    border-radius: 50%;
+}
+
+.point-hors-ligne {
+    position: absolute;
+
+    right: -2px;
+    bottom: -2px;
+
+    width: 13px;
+    height: 13px;
+
+    background: var(--gris);
+
+    border: 3px solid white;
+
+    border-radius: 50%;
+}
+
+.infos-utilisateur {
+    min-width: 0;
+
+    flex: 1;
+}
+
+.nom-utilisateur {
+    font-weight: bold;
+
+    overflow-wrap: anywhere;
+}
+
+.statut-utilisateur {
+    margin-top: 3px;
+
+    color: var(--texte-secondaire);
+
+    font-size: 12px;
+}
+
+.message-vide {
+    padding: 30px;
+
+    background: var(--blanc);
+
+    border: 1px dashed var(--bordure);
+
+    border-radius: 14px;
+
+    color: var(--texte-secondaire);
+
+    text-align: center;
+}
+
+/* =========================================================
    MESSAGES
-========================= */
+========================================================= */
 
 .message {
-    background: white;
-    padding: 12px 15px;
-    border-radius: 12px;
+    width: fit-content;
+
+    max-width: min(75%, 700px);
+
+    padding: 13px 15px;
+
     margin-bottom: 12px;
-    max-width: 75%;
-    box-shadow: 0 2px 5px #0001;
+
+    background: var(--blanc);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 14px;
+
+    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
 }
 
 .message .nom {
-    font-weight: bold;
-    color: #4f46e5;
     margin-bottom: 5px;
+
+    color: var(--primaire);
+
+    font-weight: bold;
 }
 
 .message .texte {
     overflow-wrap: anywhere;
+
+    line-height: 1.45;
 }
 
 .message .date {
+    margin-top: 7px;
+
+    color: #94a3b8;
+
     font-size: 11px;
-    color: #888;
-    margin-top: 6px;
 }
 
-/* =========================
+/* =========================================================
    ENVOI
-========================= */
+========================================================= */
 
 .zone-envoi {
     display: flex;
+
     gap: 10px;
-    background: white;
-    padding: 15px;
-    border-top: 1px solid #ddd;
+
+    padding: 15px 20px;
+
+    background: var(--blanc);
+
+    border-top: 1px solid var(--bordure);
 }
 
 #message {
     flex: 1;
+
     min-width: 0;
+
+    margin: 0;
 }
 
 #btnEnvoyer {
-    background: #4f46e5;
+    padding: 0 22px;
+
+    background: var(--primaire);
+
     color: white;
+
+    font-weight: bold;
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+#btnEnvoyer:hover {
+    background: var(--primaire-hover);
+}
 
-@media (max-width: 650px) {
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 750px) {
+
+    header {
+        padding: 0 14px;
+    }
+
+    .conteneur {
+        min-height: calc(100vh - 68px);
+    }
 
     .menu {
         width: 70px;
-        padding: 10px;
+
+        padding: 12px 9px;
     }
 
-    .menu button {
-        font-size: 0;
-        text-align: center;
-    }
-
-    .menu button::first-letter {
-        font-size: 22px;
-    }
-
-    .menu p {
+    .menu-titre,
+    .menu-separation,
+    .mon-compte {
         display: none;
     }
 
-    header {
-        padding: 0 12px;
+    .menu button {
+        justify-content: center;
+
+        padding: 13px 8px;
+
+        font-size: 0;
     }
 
-    header h2 {
-        font-size: 20px;
+    .menu button span {
+        font-size: 22px;
+    }
+
+    .titre-discussion {
+        padding: 18px;
+    }
+
+    #listeMessages {
+        padding: 18px;
+    }
+
+    .zone-envoi {
+        padding: 12px;
+    }
+
+    #btnEnvoyer {
+        padding: 0 15px;
     }
 
     .message {
         max-width: 90%;
     }
+
+    .grille-utilisateurs {
+        grid-template-columns: 1fr;
+    }
+
 }
+
+@media (max-width: 480px) {
+
+    .boite-connexion {
+        padding: 25px 20px;
+    }
+
+    .logo-chat-text {
+        display: none;
+    }
+
+    .btn-deconnexion {
+        font-size: 12px;
+    }
+
+    .accueil-entete {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+#listeMessages::-webkit-scrollbar {
+    width: 8px;
+}
+
+#listeMessages::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+
+    border-radius: 10px;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<!-- =========================
-     CONNEXION / INSCRIPTION
-========================= -->
+<!-- ========================================================
+     CONNEXION
+========================================================= -->
 
 <section id="connexion">
 
-    <div class="boite-connexion">
+```
+<div class="boite-connexion">
 
-        <div class="logo">💬</div>
-
-        <h1>Bienvenue sur Chat</h1>
-
-        <p>
-            Connecte-toi avec ton pseudo et ton code.
-        </p>
-
-        <input
-            type="text"
-            id="pseudo"
-            placeholder="Ton pseudo"
-            maxlength="20"
-            autocomplete="username"
-        >
-
-        <input
-            type="password"
-            id="motDePasse"
-            placeholder="Ton code secret"
-            maxlength="50"
-            autocomplete="current-password"
-        >
-
-        <button
-            class="btn-principal"
-            id="btnConnexion"
-        >
-            Se connecter
-        </button>
-
-        <button
-            class="btn-secondaire"
-            id="btnInscription"
-        >
-            Créer un compte
-        </button>
-
-        <p id="erreur"></p>
-
-        <p id="succes"></p>
-
+    <div class="logo-connexion">
+        💬
     </div>
+
+    <h1>Bienvenue sur Chat</h1>
+
+    <p class="sous-titre">
+        Connecte-toi avec ton pseudo et ton code secret.
+    </p>
+
+    <input
+        class="champ"
+        type="text"
+        id="pseudo"
+        placeholder="Ton pseudo"
+        maxlength="20"
+        autocomplete="username"
+    >
+
+    <input
+        class="champ"
+        type="password"
+        id="motDePasse"
+        placeholder="Ton code secret"
+        maxlength="50"
+        autocomplete="current-password"
+    >
+
+    <button
+        class="btn-principal"
+        id="btnConnexion"
+    >
+        Se connecter
+    </button>
+
+    <button
+        class="btn-secondaire"
+        id="btnInscription"
+    >
+        Créer un compte
+    </button>
+
+    <p id="erreur"></p>
+
+    <p id="succes"></p>
+
+</div>
+```
 
 </section>
 
-
-<!-- =========================
+<!-- ========================================================
      APPLICATION
-========================= -->
+========================================================= -->
 
 <section id="application">
 
-    <header>
+```
+<header>
 
-        <h2>💬 Chat</h2>
+    <div class="logo-chat">
 
-        <button id="btnDeconnexion">
-            Se déconnecter
-        </button>
+        <div class="logo-chat-icon">
+            💬
+        </div>
 
-    </header>
-
-    <div class="conteneur">
-
-        <aside class="menu">
-
-            <p>MENU</p>
-
-            <button id="btnAccueil">
-                🏠 Accueil
-            </button>
-
-            <button id="btnDiscussion">
-                💬 Discussion
-            </button>
-
-            <button id="btnAmis">
-                👥 Amis
-            </button>
-
-            <p>Connecté en tant que :</p>
-
-            <strong id="monPseudo"></strong>
-
-        </aside>
-
-
-        <main class="discussion">
-
-            <div class="titre-discussion">
-
-                <h2 id="titrePage">
-                    💬 Discussion générale
-                </h2>
-
-                <p id="descriptionPage">
-                    Parle avec tes potes.
-                </p>
-
-            </div>
-
-
-            <div id="listeMessages">
-
-                <p>Chargement des messages...</p>
-
-            </div>
-
-
-            <div class="zone-envoi">
-
-                <input
-                    type="text"
-                    id="message"
-                    placeholder="Écris un message..."
-                    maxlength="500"
-                    autocomplete="off"
-                >
-
-                <button id="btnEnvoyer">
-                    Envoyer
-                </button>
-
-            </div>
-
-        </main>
+        <span class="logo-chat-text">
+            Chat
+        </span>
 
     </div>
 
+    <button
+        class="btn-deconnexion"
+        id="btnDeconnexion"
+    >
+        Se déconnecter
+    </button>
+
+</header>
+
+
+<div class="conteneur">
+
+
+    <!-- =================================================
+         MENU
+    ================================================== -->
+
+    <aside class="menu">
+
+        <p class="menu-titre">
+            Menu
+        </p>
+
+        <button id="btnAccueil">
+            <span>🏠</span>
+            <span>Accueil</span>
+        </button>
+
+        <button id="btnDiscussion">
+            <span>💬</span>
+            <span>Discussion</span>
+        </button>
+
+        <button id="btnAmis">
+            <span>👥</span>
+            <span>Amis</span>
+        </button>
+
+
+        <div class="menu-separation"></div>
+
+
+        <div class="mon-compte">
+
+            <div class="mon-compte-label">
+                Connecté en tant que
+            </div>
+
+            <div
+                class="mon-compte-pseudo"
+                id="monPseudo"
+            >
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =================================================
+         CONTENU
+    ================================================== -->
+
+    <main class="discussion">
+
+
+        <div class="titre-discussion">
+
+            <h2 id="titrePage">
+                🏠 Accueil
+            </h2>
+
+            <p id="descriptionPage">
+                Bienvenue sur Chat !
+            </p>
+
+        </div>
+
+
+        <div id="listeMessages">
+
+            <div class="message-vide">
+                Chargement...
+            </div>
+
+        </div>
+
+
+        <div
+            class="zone-envoi"
+            style="display: none;"
+        >
+
+            <input
+                class="champ"
+                type="text"
+                id="message"
+                placeholder="Écris un message..."
+                maxlength="500"
+                autocomplete="off"
+            >
+
+            <button id="btnEnvoyer">
+                Envoyer
+            </button>
+
+        </div>
+
+    </main>
+
+</div>
+```
+
 </section>
 
-
 <script>
-/* ==========================================
+
+/* =========================================================
    CONFIGURATION SUPABASE
-========================================== */
+========================================================= */
 
 const SUPABASE_URL =
     "https://dlzmbyvclmlgohmecuui.supabase.co";
@@ -433,24 +1002,29 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
     "sb_publishable_qd9EbA110P3SerFO3iq2iQ_cAgPzzGi";
 
-const client = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+const client =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
 
 
-/* ==========================================
+/* =========================================================
    VARIABLES
-========================================== */
+========================================================= */
 
 let utilisateur = null;
+
 let pseudoActuel = "";
+
 let canalMessages = null;
 
+let canalPresence = null;
 
-/* ==========================================
-   ELEMENTS HTML
-========================================== */
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
 
 const connexion =
     document.getElementById("connexion");
@@ -494,43 +1068,59 @@ const titrePage =
 const descriptionPage =
     document.getElementById("descriptionPage");
 
+const zoneEnvoi =
+    document.querySelector(".zone-envoi");
 
-/* ==========================================
+
+/* =========================================================
    MESSAGES
-========================================== */
+========================================================= */
 
 function afficherErreur(message) {
+
     erreur.textContent = message;
+
     succes.textContent = "";
+
 }
+
 
 function afficherSucces(message) {
+
     succes.textContent = message;
+
     erreur.textContent = "";
+
 }
 
 
-/* ==========================================
+/* =========================================================
    VERIFICATIONS
-========================================== */
+========================================================= */
 
 function verifierPseudo(pseudo) {
+
     return /^[a-zA-Z0-9_]{3,20}$/.test(pseudo);
+
 }
+
 
 function verifierCode(code) {
+
     return code.length >= 6;
+
 }
 
 
-/* ==========================================
-   CREATION DE COMPTE
-========================================== */
+/* =========================================================
+   INSCRIPTION
+========================================================= */
 
 btnInscription.addEventListener(
     "click",
     inscrire
 );
+
 
 async function inscrire() {
 
@@ -543,6 +1133,7 @@ async function inscrire() {
     const code =
         inputMotDePasse.value;
 
+
     if (!verifierPseudo(pseudo)) {
 
         afficherErreur(
@@ -551,6 +1142,7 @@ async function inscrire() {
 
         return;
     }
+
 
     if (!verifierCode(code)) {
 
@@ -561,20 +1153,23 @@ async function inscrire() {
         return;
     }
 
+
     btnInscription.disabled = true;
 
-    afficherSucces("Création du compte...");
+    afficherSucces(
+        "Création du compte..."
+    );
 
-    /*
-       On vérifie si le pseudo existe déjà.
-    */
 
-    const { data: profilExistant, error: erreurRecherche } =
-        await client
-            .from("profils")
-            .select("id")
-            .eq("pseudo", pseudo)
-            .maybeSingle();
+    const {
+        data: profilExistant,
+        error: erreurRecherche
+    } = await client
+        .from("profils")
+        .select("id")
+        .eq("pseudo", pseudo)
+        .maybeSingle();
+
 
     if (erreurRecherche) {
 
@@ -590,6 +1185,7 @@ async function inscrire() {
         return;
     }
 
+
     if (profilExistant) {
 
         afficherErreur(
@@ -601,23 +1197,21 @@ async function inscrire() {
         return;
     }
 
-    /*
-       Création d'un identifiant unique.
-    */
 
     const nouvelId =
         crypto.randomUUID();
 
-    const { data: nouveauProfil, error } =
-        await client
-            .from("profils")
-            .insert({
-                id: nouvelId,
-                pseudo: pseudo,
-                code: code
-            })
-            .select()
-            .single();
+
+    const {
+        error
+    } = await client
+        .from("profils")
+        .insert({
+            id: nouvelId,
+            pseudo: pseudo,
+            code: code
+        });
+
 
     if (error) {
 
@@ -633,24 +1227,28 @@ async function inscrire() {
         return;
     }
 
+
     afficherSucces(
         "Compte créé ! Tu peux maintenant te connecter."
     );
 
+
     inputMotDePasse.value = "";
 
     btnInscription.disabled = false;
+
 }
 
 
-/* ==========================================
+/* =========================================================
    CONNEXION
-========================================== */
+========================================================= */
 
 btnConnexion.addEventListener(
     "click",
     connecter
 );
+
 
 inputMotDePasse.addEventListener(
     "keydown",
@@ -663,6 +1261,7 @@ inputMotDePasse.addEventListener(
     }
 );
 
+
 async function connecter() {
 
     afficherErreur("");
@@ -674,12 +1273,16 @@ async function connecter() {
     const code =
         inputMotDePasse.value;
 
+
     if (!verifierPseudo(pseudo)) {
 
-        afficherErreur("Pseudo invalide.");
+        afficherErreur(
+            "Pseudo invalide."
+        );
 
         return;
     }
+
 
     if (!code) {
 
@@ -690,17 +1293,24 @@ async function connecter() {
         return;
     }
 
+
     btnConnexion.disabled = true;
 
-    afficherSucces("Connexion...");
+    afficherSucces(
+        "Connexion..."
+    );
 
-    const { data: profil, error } =
-        await client
-            .from("profils")
-            .select("*")
-            .eq("pseudo", pseudo)
-            .eq("code", code)
-            .maybeSingle();
+
+    const {
+        data: profil,
+        error
+    } = await client
+        .from("profils")
+        .select("*")
+        .eq("pseudo", pseudo)
+        .eq("code", code)
+        .maybeSingle();
+
 
     if (error) {
 
@@ -716,6 +1326,7 @@ async function connecter() {
         return;
     }
 
+
     if (!profil) {
 
         afficherErreur(
@@ -727,24 +1338,24 @@ async function connecter() {
         return;
     }
 
-    ouvrirApplication(profil);
+
+    await ouvrirApplication(profil);
 
     btnConnexion.disabled = false;
+
 }
 
 
-/* ==========================================
-   OUVRIR L'APPLICATION
-========================================== */
+/* =========================================================
+   OUVRIR APPLICATION
+========================================================= */
 
-function ouvrirApplication(profil) {
+async function ouvrirApplication(profil) {
 
     utilisateur = profil;
+
     pseudoActuel = profil.pseudo;
 
-    /*
-       On ne sauvegarde pas le code dans le navigateur.
-    */
 
     localStorage.setItem(
         "compte_chat",
@@ -754,150 +1365,765 @@ function ouvrirApplication(profil) {
         })
     );
 
+
     monPseudo.textContent =
         "@" + pseudoActuel;
 
-    connexion.style.display = "none";
-    application.style.display = "block";
 
-    afficherDiscussion();
+    connexion.style.display =
+        "none";
 
-    ecouterMessages();
+    application.style.display =
+        "block";
+
+
+    zoneEnvoi.style.display =
+        "none";
+
+
+    await demarrerPresence();
+
+
+    afficherAccueil();
+
 }
 
 
-/* ==========================================
-   CHARGER LES MESSAGES
-========================================== */
+/* =========================================================
+   PRESENCE
+========================================================= */
 
-async function chargerMessages() {
+async function demarrerPresence() {
 
-    listeMessages.innerHTML =
-        "<p>Chargement des messages...</p>";
+    if (!utilisateur) {
+        return;
+    }
 
-    const { data, error } =
-        await client
-            .from("messages")
-            .select("*")
-            .order("date_envoi", {
-                ascending: true
-            })
-            .limit(100);
+
+    if (canalPresence) {
+
+        await client.removeChannel(
+            canalPresence
+        );
+
+        canalPresence = null;
+
+    }
+
+
+    canalPresence =
+        client.channel(
+            "presence-chat",
+            {
+                config: {
+                    presence: {
+                        key: utilisateur.id
+                    }
+                }
+            }
+        );
+
+
+    canalPresence.on(
+        "presence",
+        {
+            event: "sync"
+        },
+        function() {
+
+            if (
+                titrePage.textContent.includes(
+                    "Accueil"
+                )
+            ) {
+
+                afficherUtilisateurs();
+
+            }
+
+        }
+    );
+
+
+    canalPresence.on(
+        "presence",
+        {
+            event: "join"
+        },
+        function() {
+
+            if (
+                titrePage.textContent.includes(
+                    "Accueil"
+                )
+            ) {
+
+                afficherUtilisateurs();
+
+            }
+
+        }
+    );
+
+
+    canalPresence.on(
+        "presence",
+        {
+            event: "leave"
+        },
+        function() {
+
+            if (
+                titrePage.textContent.includes(
+                    "Accueil"
+                )
+            ) {
+
+                afficherUtilisateurs();
+
+            }
+
+        }
+    );
+
+
+    canalPresence.subscribe(
+        async function(status) {
+
+            if (
+                status === "SUBSCRIBED"
+            ) {
+
+                await canalPresence.track({
+
+                    id: utilisateur.id,
+
+                    pseudo: utilisateur.pseudo
+
+                });
+
+                afficherUtilisateurs();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   UTILISATEURS
+========================================================= */
+
+async function afficherUtilisateurs() {
+
+    if (!canalPresence) {
+        return;
+    }
+
+
+    listeMessages.innerHTML = `
+        <div class="message-vide">
+            Chargement des utilisateurs...
+        </div>
+    `;
+
+
+    const {
+        data: profils,
+        error
+    } = await client
+        .from("profils")
+        .select("id, pseudo")
+        .order("pseudo", {
+            ascending: true
+        });
+
 
     if (error) {
 
-        listeMessages.innerHTML =
-            "<p>Impossible de charger les messages.</p>";
+        console.error(error);
+
+        listeMessages.innerHTML = `
+            <div class="message-vide">
+                Impossible de charger les utilisateurs.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const presenceState =
+        canalPresence.presenceState();
+
+
+    const idsConnectes =
+        new Set();
+
+
+    Object.keys(
+        presenceState
+    ).forEach(function(key) {
+
+        const presences =
+            presenceState[key];
+
+
+        if (
+            Array.isArray(presences)
+        ) {
+
+            presences.forEach(
+                function(presence) {
+
+                    if (
+                        presence.id
+                    ) {
+
+                        idsConnectes.add(
+                            String(
+                                presence.id
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+    });
+
+
+    const connectes = [];
+
+    const deconnectes = [];
+
+
+    profils.forEach(
+        function(profil) {
+
+            if (
+                idsConnectes.has(
+                    String(profil.id)
+                )
+            ) {
+
+                connectes.push(
+                    profil
+                );
+
+            } else {
+
+                deconnectes.push(
+                    profil
+                );
+
+            }
+
+        }
+    );
+
+
+    listeMessages.innerHTML = "";
+
+
+    /* =====================================================
+       EN-TETE
+    ====================================================== */
+
+    const accueilEntete =
+        document.createElement("div");
+
+    accueilEntete.className =
+        "accueil-entete";
+
+
+    const titre =
+        document.createElement("h3");
+
+    titre.textContent =
+        "Les utilisateurs de Chat";
+
+
+    const compteur =
+        document.createElement("div");
+
+    compteur.className =
+        "compteur-connectes";
+
+    compteur.textContent =
+        "🟢 " +
+        connectes.length +
+        " connecté" +
+        (
+            connectes.length > 1
+                ? "s"
+                : ""
+        );
+
+
+    accueilEntete.appendChild(
+        titre
+    );
+
+    accueilEntete.appendChild(
+        compteur
+    );
+
+
+    listeMessages.appendChild(
+        accueilEntete
+    );
+
+
+    /* =====================================================
+       SECTION CONNECTES
+    ====================================================== */
+
+    const sectionConnectes =
+        document.createElement("section");
+
+    sectionConnectes.className =
+        "section-utilisateurs";
+
+
+    const titreConnectes =
+        document.createElement("h3");
+
+    titreConnectes.textContent =
+        "🟢 En ligne";
+
+
+    const grilleConnectes =
+        document.createElement("div");
+
+    grilleConnectes.className =
+        "grille-utilisateurs";
+
+
+    if (
+        connectes.length === 0
+    ) {
+
+        grilleConnectes.innerHTML = `
+            <div class="message-vide">
+                Personne n'est actuellement connecté.
+            </div>
+        `;
+
+    } else {
+
+        connectes.forEach(
+            function(profil) {
+
+                grilleConnectes.appendChild(
+                    creerCarteUtilisateur(
+                        profil,
+                        true
+                    )
+                );
+
+            }
+        );
+
+    }
+
+
+    sectionConnectes.appendChild(
+        titreConnectes
+    );
+
+    sectionConnectes.appendChild(
+        grilleConnectes
+    );
+
+
+    listeMessages.appendChild(
+        sectionConnectes
+    );
+
+
+    /* =====================================================
+       SECTION HORS LIGNE
+    ====================================================== */
+
+    const sectionDeconnectes =
+        document.createElement("section");
+
+    sectionDeconnectes.className =
+        "section-utilisateurs";
+
+
+    const titreDeconnectes =
+        document.createElement("h3");
+
+    titreDeconnectes.textContent =
+        "⚫ Hors ligne";
+
+
+    const grilleDeconnectes =
+        document.createElement("div");
+
+    grilleDeconnectes.className =
+        "grille-utilisateurs";
+
+
+    if (
+        deconnectes.length === 0
+    ) {
+
+        grilleDeconnectes.innerHTML = `
+            <div class="message-vide">
+                Tous les utilisateurs sont en ligne.
+            </div>
+        `;
+
+    } else {
+
+        deconnectes.forEach(
+            function(profil) {
+
+                grilleDeconnectes.appendChild(
+                    creerCarteUtilisateur(
+                        profil,
+                        false
+                    )
+                );
+
+            }
+        );
+
+    }
+
+
+    sectionDeconnectes.appendChild(
+        titreDeconnectes
+    );
+
+    sectionDeconnectes.appendChild(
+        grilleDeconnectes
+    );
+
+
+    listeMessages.appendChild(
+        sectionDeconnectes
+    );
+
+}
+
+
+/* =========================================================
+   CARTE UTILISATEUR
+========================================================= */
+
+function creerCarteUtilisateur(
+    profil,
+    connecte
+) {
+
+    const carte =
+        document.createElement("div");
+
+    carte.className =
+        "carte-utilisateur";
+
+
+    const avatar =
+        document.createElement("div");
+
+    avatar.className =
+        "avatar-utilisateur";
+
+
+    const premiereLettre =
+        profil.pseudo
+            .charAt(0)
+            .toUpperCase();
+
+
+    avatar.textContent =
+        premiereLettre;
+
+
+    const point =
+        document.createElement("div");
+
+
+    if (connecte) {
+
+        point.className =
+            "point-en-ligne";
+
+    } else {
+
+        point.className =
+            "point-hors-ligne";
+
+    }
+
+
+    avatar.appendChild(
+        point
+    );
+
+
+    const infos =
+        document.createElement("div");
+
+    infos.className =
+        "infos-utilisateur";
+
+
+    const nom =
+        document.createElement("div");
+
+    nom.className =
+        "nom-utilisateur";
+
+    nom.textContent =
+        "@" + profil.pseudo;
+
+
+    const statut =
+        document.createElement("div");
+
+    statut.className =
+        "statut-utilisateur";
+
+    statut.textContent =
+        connecte
+            ? "En ligne"
+            : "Hors ligne";
+
+
+    infos.appendChild(
+        nom
+    );
+
+    infos.appendChild(
+        statut
+    );
+
+
+    carte.appendChild(
+        avatar
+    );
+
+    carte.appendChild(
+        infos
+    );
+
+
+    return carte;
+
+}
+
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+async function chargerMessages() {
+
+    listeMessages.innerHTML = `
+        <div class="message-vide">
+            Chargement des messages...
+        </div>
+    `;
+
+
+    const {
+        data,
+        error
+    } = await client
+        .from("messages")
+        .select("*")
+        .order("date_envoi", {
+            ascending: true
+        })
+        .limit(100);
+
+
+    if (error) {
+
+        listeMessages.innerHTML = `
+            <div class="message-vide">
+                Impossible de charger les messages.
+            </div>
+        `;
 
         console.error(error);
 
         return;
     }
 
+
     listeMessages.innerHTML = "";
 
-    if (!data || data.length === 0) {
 
-        listeMessages.innerHTML =
-            "<p>Aucun message pour le moment.</p>";
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        listeMessages.innerHTML = `
+            <div class="message-vide">
+                Aucun message pour le moment.
+            </div>
+        `;
 
         return;
     }
 
-    data.forEach(afficherMessage);
+
+    data.forEach(
+        afficherMessage
+    );
+
 
     allerEnBas();
+
 }
 
 
-/* ==========================================
-   AFFICHER UN MESSAGE
-========================================== */
+/* =========================================================
+   AFFICHER MESSAGE
+========================================================= */
 
 function afficherMessage(message) {
 
     const bloc =
         document.createElement("div");
 
-    bloc.className = "message";
+    bloc.className =
+        "message";
+
 
     const nom =
         document.createElement("div");
 
-    nom.className = "nom";
+    nom.className =
+        "nom";
 
     nom.textContent =
         "@" + message.pseudo;
 
+
     const texte =
         document.createElement("div");
 
-    texte.className = "texte";
+    texte.className =
+        "texte";
 
     texte.textContent =
         message.contenu;
 
+
     const date =
         document.createElement("div");
 
-    date.className = "date";
+    date.className =
+        "date";
 
-    date.textContent =
-        new Date(
-            message.date_envoi
-        ).toLocaleString("fr-FR");
 
-    bloc.appendChild(nom);
-    bloc.appendChild(texte);
-    bloc.appendChild(date);
+    if (message.date_envoi) {
 
-    listeMessages.appendChild(bloc);
+        date.textContent =
+            new Date(
+                message.date_envoi
+            ).toLocaleString(
+                "fr-FR"
+            );
+
+    }
+
+
+    bloc.appendChild(
+        nom
+    );
+
+    bloc.appendChild(
+        texte
+    );
+
+    bloc.appendChild(
+        date
+    );
+
+
+    listeMessages.appendChild(
+        bloc
+    );
+
 }
 
 
-/* ==========================================
-   ENVOYER UN MESSAGE
-========================================== */
+/* =========================================================
+   ENVOYER MESSAGE
+========================================================= */
 
 btnEnvoyer.addEventListener(
     "click",
     envoyerMessage
 );
 
+
 inputMessage.addEventListener(
     "keydown",
     function(event) {
 
-        if (event.key === "Enter") {
+        if (
+            event.key === "Enter"
+        ) {
+
             envoyerMessage();
+
         }
 
     }
 );
+
 
 async function envoyerMessage() {
 
     const contenu =
         inputMessage.value.trim();
 
+
     if (!contenu) {
         return;
     }
+
 
     if (!utilisateur) {
         return;
     }
 
+
     btnEnvoyer.disabled = true;
 
-    const { error } =
-        await client
-            .from("messages")
-            .insert({
-                utilisateur_id: utilisateur.id,
-                pseudo: pseudoActuel,
-                contenu: contenu
-            });
+
+    const {
+        error
+    } = await client
+        .from("messages")
+        .insert({
+
+            utilisateur_id:
+                utilisateur.id,
+
+            pseudo:
+                pseudoActuel,
+
+            contenu:
+                contenu
+
+        });
+
 
     if (error) {
 
@@ -914,13 +2140,15 @@ async function envoyerMessage() {
 
     }
 
+
     btnEnvoyer.disabled = false;
+
 }
 
 
-/* ==========================================
-   TEMPS REEL
-========================================== */
+/* =========================================================
+   TEMPS REEL MESSAGES
+========================================================= */
 
 function ecouterMessages() {
 
@@ -928,9 +2156,12 @@ function ecouterMessages() {
         return;
     }
 
+
     canalMessages =
         client
-            .channel("nouveaux-messages")
+            .channel(
+                "nouveaux-messages"
+            )
             .on(
                 "postgres_changes",
                 {
@@ -940,65 +2171,78 @@ function ecouterMessages() {
                 },
                 function(payload) {
 
-                    afficherMessage(payload.new);
-                    allerEnBas();
+                    if (
+                        titrePage.textContent.includes(
+                            "Discussion"
+                        )
+                    ) {
+
+                        afficherMessage(
+                            payload.new
+                        );
+
+                        allerEnBas();
+
+                    }
 
                 }
             )
             .subscribe();
+
 }
 
 
-/* ==========================================
+/* =========================================================
    DESCENDRE EN BAS
-========================================== */
+========================================================= */
 
 function allerEnBas() {
 
     listeMessages.scrollTop =
         listeMessages.scrollHeight;
+
 }
 
 
-/* ==========================================
-   MENU ACCUEIL
-========================================== */
+/* =========================================================
+   ACCUEIL
+========================================================= */
 
-document.getElementById("btnAccueil")
-    .addEventListener(
-        "click",
-        function() {
-
-            titrePage.textContent =
-                "🏠 Accueil";
-
-            descriptionPage.textContent =
-                "Bienvenue sur Chat !";
-
-            listeMessages.innerHTML =
-                "<p>Bienvenue sur ton espace Chat.</p>";
-
-            document.querySelector(
-                ".zone-envoi"
-            ).style.display = "none";
-
-        }
-    );
+document.getElementById(
+    "btnAccueil"
+).addEventListener(
+    "click",
+    afficherAccueil
+);
 
 
-/* ==========================================
-   MENU DISCUSSION
-========================================== */
+function afficherAccueil() {
 
-document.getElementById("btnDiscussion")
-    .addEventListener(
-        "click",
-        function() {
+    titrePage.textContent =
+        "🏠 Accueil";
 
-            afficherDiscussion();
+    descriptionPage.textContent =
+        "Voici les personnes présentes sur Chat.";
 
-        }
-    );
+    zoneEnvoi.style.display =
+        "none";
+
+    afficherUtilisateurs();
+
+}
+
+
+/* =========================================================
+   DISCUSSION
+========================================================= */
+
+document.getElementById(
+    "btnDiscussion"
+).addEventListener(
+    "click",
+    afficherDiscussion
+);
+
 
 async function afficherDiscussion() {
 
@@ -1008,142 +2252,219 @@ async function afficherDiscussion() {
     descriptionPage.textContent =
         "Parle avec tes potes.";
 
-    document.querySelector(
-        ".zone-envoi"
-    ).style.display = "flex";
+    zoneEnvoi.style.display =
+        "flex";
 
     await chargerMessages();
 
+    ecouterMessages();
+
     allerEnBas();
+
 }
 
 
-/* ==========================================
-   MENU AMIS
-========================================== */
+/* =========================================================
+   AMIS
+========================================================= */
 
-document.getElementById("btnAmis")
-    .addEventListener(
-        "click",
-        function() {
+document.getElementById(
+    "btnAmis"
+).addEventListener(
+    "click",
+    function() {
 
-            titrePage.textContent =
-                "👥 Amis";
+        titrePage.textContent =
+            "👥 Amis";
 
-            descriptionPage.textContent =
-                "Tes amis sur Chat.";
+        descriptionPage.textContent =
+            "Tes amis sur Chat.";
 
-            listeMessages.innerHTML =
-                "<p>La fonctionnalité Amis sera ajoutée prochainement.</p>";
+        listeMessages.innerHTML = `
+            <div class="message-vide">
+                La fonctionnalité Amis sera ajoutée prochainement.
+            </div>
+        `;
 
-            document.querySelector(
-                ".zone-envoi"
-            ).style.display = "none";
+        zoneEnvoi.style.display =
+            "none";
 
-        }
-    );
+    }
+);
 
 
-/* ==========================================
+/* =========================================================
    DECONNEXION
-========================================== */
+========================================================= */
 
-document.getElementById("btnDeconnexion")
-    .addEventListener(
-        "click",
-        async function() {
+document.getElementById(
+    "btnDeconnexion"
+).addEventListener(
+    "click",
+    async function() {
 
-            if (canalMessages) {
 
-                await client.removeChannel(
-                    canalMessages
-                );
+        /* -----------------------------------------------
+           PRESENCE
+        ------------------------------------------------ */
 
-                canalMessages = null;
+        if (canalPresence) {
+
+            try {
+
+                await canalPresence.untrack();
+
+            } catch (error) {
+
+                console.error(error);
 
             }
 
-            utilisateur = null;
-            pseudoActuel = "";
 
-            localStorage.removeItem(
-                "compte_chat"
+            await client.removeChannel(
+                canalPresence
             );
 
-            application.style.display = "none";
-            connexion.style.display = "flex";
-
-            inputPseudo.value = "";
-            inputMotDePasse.value = "";
-            inputMessage.value = "";
-
-            listeMessages.innerHTML = "";
-
-            afficherErreur("");
-            afficherSucces("");
+            canalPresence = null;
 
         }
-    );
 
 
-/* ==========================================
+        /* -----------------------------------------------
+           MESSAGES
+        ------------------------------------------------ */
+
+        if (canalMessages) {
+
+            await client.removeChannel(
+                canalMessages
+            );
+
+            canalMessages = null;
+
+        }
+
+
+        /* -----------------------------------------------
+           RESET
+        ------------------------------------------------ */
+
+        utilisateur = null;
+
+        pseudoActuel = "";
+
+
+        localStorage.removeItem(
+            "compte_chat"
+        );
+
+
+        application.style.display =
+            "none";
+
+        connexion.style.display =
+            "flex";
+
+
+        inputPseudo.value = "";
+
+        inputMotDePasse.value = "";
+
+        inputMessage.value = "";
+
+        listeMessages.innerHTML =
+            "";
+
+
+        afficherErreur("");
+
+        afficherSucces("");
+
+    }
+);
+
+
+/* =========================================================
    RECONNEXION AUTOMATIQUE
-========================================== */
+========================================================= */
 
 async function verifierConnexionSauvegardee() {
 
     const compteSauvegarde =
-        localStorage.getItem("compte_chat");
+        localStorage.getItem(
+            "compte_chat"
+        );
+
 
     if (!compteSauvegarde) {
         return;
     }
 
+
     try {
 
         const compte =
-            JSON.parse(compteSauvegarde);
+            JSON.parse(
+                compteSauvegarde
+            );
 
-        if (!compte.id || !compte.pseudo) {
+
+        if (
+            !compte.id ||
+            !compte.pseudo
+        ) {
+
             return;
+
         }
 
-        /*
-           On vérifie que le profil existe toujours.
-        */
 
-        const { data: profil, error } =
-            await client
-                .from("profils")
-                .select("*")
-                .eq("id", compte.id)
-                .eq("pseudo", compte.pseudo)
-                .maybeSingle();
+        const {
+            data: profil,
+            error
+        } = await client
+            .from("profils")
+            .select("*")
+            .eq("id", compte.id)
+            .eq("pseudo", compte.pseudo)
+            .maybeSingle();
 
-        if (error || !profil) {
+
+        if (
+            error ||
+            !profil
+        ) {
 
             localStorage.removeItem(
                 "compte_chat"
             );
 
             return;
+
         }
 
-        ouvrirApplication(profil);
+
+        await ouvrirApplication(
+            profil
+        );
+
 
     } catch (error) {
+
+        console.error(error);
 
         localStorage.removeItem(
             "compte_chat"
         );
 
     }
+
 }
 
 
-/* ==========================================
+/* =========================================================
    LANCEMENT
-========================================== */
+========================================================= */
 
 verifierConnexionSauvegardee();
 
