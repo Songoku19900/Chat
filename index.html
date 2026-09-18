@@ -3322,8 +3322,8 @@ function afficherMessagePrive(
 
 
     const estMoi =
-        String(message.auteur_id) ===
-        String(utilisateur.id);
+        String(message.pseudo) ===
+        String(pseudoActuel);
 
 
     bloc.className =
@@ -3346,9 +3346,7 @@ function afficherMessagePrive(
         "nom-prive";
 
     nom.textContent =
-        estMoi
-            ? "Toi"
-            : "@" + message.pseudo;
+        "@" + message.pseudo;
 
 
     const texte =
@@ -3358,7 +3356,7 @@ function afficherMessagePrive(
         "texte-prive";
 
     texte.textContent =
-        message.text;
+        message.texte;
 
 
     const date =
