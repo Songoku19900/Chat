@@ -1509,6 +1509,189 @@ header {
     }
 }
 
+
+
+/* =========================================================
+   JEUX EN LIGNE
+========================================================= */
+
+.grille-jeux {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.carte-jeu {
+    padding: 20px;
+    background: var(--blanc);
+    border: 1px solid var(--bordure);
+    border-radius: 16px;
+    box-shadow: var(--ombre);
+}
+
+.carte-jeu h3 {
+    margin: 0 0 8px;
+}
+
+.carte-jeu p {
+    color: var(--texte-secondaire);
+    margin: 0 0 15px;
+}
+
+.btn-jeu {
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--primaire);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.liste-invitations-jeu {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.invitation-jeu {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    background: var(--blanc);
+    border: 1px solid var(--bordure);
+    border-radius: 12px;
+}
+
+.invitation-jeu-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.invitation-jeu-actions button {
+    min-height: 40px;
+    padding: 8px 11px;
+    border: 0;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.btn-accepter-jeu {
+    background: var(--vert);
+    color: white;
+}
+
+.btn-refuser-jeu {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.zone-morpion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.info-morpion {
+    text-align: center;
+    color: var(--texte-secondaire);
+}
+
+.grille-morpion {
+    display: grid;
+    grid-template-columns: repeat(3, 88px);
+    gap: 8px;
+}
+
+.case-morpion {
+    width: 88px;
+    height: 88px;
+    border: 1px solid var(--bordure);
+    border-radius: 14px;
+    background: var(--blanc);
+    font-size: 34px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.case-morpion:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.btn-quitter-jeu {
+    min-height: 42px;
+    padding: 9px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #fee2e2;
+    color: #b91c1c;
+    cursor: pointer;
+}
+
+.fenetre-invitation-jeu {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.boite-invitation-jeu {
+    width: min(420px, 100%);
+    padding: 24px;
+    background: var(--blanc);
+    border-radius: 18px;
+    box-shadow: 0 15px 45px rgba(15, 23, 42, 0.25);
+    text-align: center;
+}
+
+.actions-invitation-jeu {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.actions-invitation-jeu button {
+    flex: 1;
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+@media (max-width: 750px) {
+    .grille-morpion {
+        grid-template-columns: repeat(3, min(25vw, 82px));
+    }
+
+    .case-morpion {
+        width: min(25vw, 82px);
+        height: min(25vw, 82px);
+    }
+
+    .invitation-jeu {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .invitation-jeu-actions {
+        width: 100%;
+    }
+
+    .invitation-jeu-actions button {
+        flex: 1;
+    }
+}
+
 </style>
 
 </head>
@@ -1638,6 +1821,12 @@ header {
         <button id="btnAmis">
             <span>👥</span>
             <span>Potes</span>
+        </button>
+
+
+        <button id="btnJeux">
+            <span>🎮</span>
+            <span>Jeux</span>
         </button>
 
 
@@ -1781,6 +1970,15 @@ let conversationActuelle = null;
 
 let utilisateurPriveActuel = null;
 
+/* =========================================================
+   JEUX EN LIGNE - MORPION
+========================================================= */
+
+let canalMorpion = null;
+let partieMorpionActuelle = null;
+let symboleMorpion = null;
+
+
 
 /* =========================================================
    VARIABLES APPELS AUDIO
@@ -1894,6 +2092,9 @@ const btnDiscussion =
 
 const btnAmis =
     document.getElementById("btnAmis");
+
+const btnJeux =
+    document.getElementById("btnJeux");
 
 
 /* =========================================================
@@ -2217,6 +2418,8 @@ async function ouvrirApplication(profil) {
     await demarrerPresence();
 
     await initialiserEcouteAppels();
+
+    await initialiserEcouteMorpion();
 
 
     afficherAccueil();
@@ -3305,6 +3508,493 @@ btnAmis.addEventListener(
     "click",
     afficherPotes
 );
+
+
+/* =========================================================
+   JEUX EN LIGNE
+========================================================= */
+
+btnJeux.addEventListener(
+    "click",
+    afficherJeux
+);
+
+
+async function afficherJeux() {
+
+    fermerConversationPrivee();
+
+    changerBoutonActif(btnJeux);
+
+    titrePage.textContent = "🎮 Jeux en ligne";
+    descriptionPage.textContent =
+        "Invite un pote et joue avec lui en temps réel.";
+
+    zoneEnvoi.style.display = "none";
+
+    if (partieMorpionActuelle) {
+        afficherPartieMorpion(partieMorpionActuelle);
+        return;
+    }
+
+    listeMessages.innerHTML = `
+        <div class="grille-jeux">
+            <div class="carte-jeu">
+                <h3>❌⭕ Morpion</h3>
+                <p>Affronte un pote en temps réel, chacun depuis son téléphone ou son ordinateur.</p>
+                <button class="btn-jeu" id="btnLancerMorpion">Choisir un pote</button>
+            </div>
+        </div>
+        <div id="listeInvitationsJeu" class="liste-invitations-jeu"></div>
+    `;
+
+    document.getElementById("btnLancerMorpion")
+        .addEventListener("click", afficherChoixAdversaireMorpion);
+
+    await chargerInvitationsMorpion();
+}
+
+
+async function afficherChoixAdversaireMorpion() {
+
+    const { data: profils, error } = await client
+        .from("profils")
+        .select("id, pseudo")
+        .neq("id", utilisateur.id)
+        .order("pseudo", { ascending: true });
+
+    if (error) {
+        alert("Impossible de charger les potes : " + error.message);
+        return;
+    }
+
+    const autres = profils || [];
+
+    if (autres.length === 0) {
+        alert("Il n'y a aucun autre compte à inviter pour le moment.");
+        return;
+    }
+
+    listeMessages.innerHTML = `
+        <div class="zone-recherche">
+            <input class="champ" id="rechercheAdversaireMorpion" type="text" placeholder="🔎 Rechercher un pote..." autocomplete="off">
+        </div>
+        <div id="listeAdversairesMorpion" class="grille-utilisateurs"></div>
+        <button class="btn-quitter-jeu" id="btnRetourJeux" type="button">← Retour aux jeux</button>
+    `;
+
+    const afficher = function(liste) {
+        const zone = document.getElementById("listeAdversairesMorpion");
+        zone.innerHTML = "";
+
+        liste.forEach(function(profil) {
+            const carte = document.createElement("div");
+            carte.className = "carte-utilisateur";
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar-utilisateur";
+            avatar.textContent = profil.pseudo.charAt(0).toUpperCase();
+
+            const infos = document.createElement("div");
+            infos.className = "infos-utilisateur";
+
+            const nom = document.createElement("div");
+            nom.className = "nom-utilisateur";
+            nom.textContent = "@" + profil.pseudo;
+
+            const bouton = document.createElement("button");
+            bouton.className = "btn-parler";
+            bouton.textContent = "🎮 Inviter";
+            bouton.addEventListener("click", function() {
+                inviterAuMorpion(profil);
+            });
+
+            infos.appendChild(nom);
+            carte.appendChild(avatar);
+            carte.appendChild(infos);
+            carte.appendChild(bouton);
+            zone.appendChild(carte);
+        });
+    };
+
+    afficher(autres);
+
+    document.getElementById("rechercheAdversaireMorpion")
+        .addEventListener("input", function() {
+            const texte = this.value.trim().toLowerCase();
+            afficher(autres.filter(function(p) {
+                return p.pseudo.toLowerCase().includes(texte);
+            }));
+        });
+
+    document.getElementById("btnRetourJeux")
+        .addEventListener("click", afficherJeux);
+}
+
+
+async function inviterAuMorpion(profil) {
+
+    const { data, error } = await client
+        .from("parties_morpion")
+        .insert({
+            joueur_x: utilisateur.id,
+            joueur_o: profil.id,
+            tour: "X",
+            grille: ["", "", "", "", "", "", "", "", ""],
+            statut: "invitation"
+        })
+        .select()
+        .single();
+
+    if (error) {
+        alert("Impossible d'envoyer l'invitation : " + error.message);
+        return;
+    }
+
+    partieMorpionActuelle = data;
+    symboleMorpion = "X";
+    afficherPartieMorpion(data);
+}
+
+
+async function chargerInvitationsMorpion() {
+
+    const zone = document.getElementById("listeInvitationsJeu");
+    if (!zone || !utilisateur) return;
+
+    const { data, error } = await client
+        .from("parties_morpion")
+        .select("*")
+        .eq("joueur_o", utilisateur.id)
+        .eq("statut", "invitation")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    zone.innerHTML = "";
+
+    if (!data || data.length === 0) return;
+
+    const ids = [...new Set(data.map(function(p) { return p.joueur_x; }))];
+    const { data: profils } = await client
+        .from("profils")
+        .select("id, pseudo")
+        .in("id", ids);
+
+    data.forEach(function(partie) {
+        const profil = (profils || []).find(function(p) {
+            return String(p.id) === String(partie.joueur_x);
+        });
+
+        const bloc = document.createElement("div");
+        bloc.className = "invitation-jeu";
+
+        const texte = document.createElement("div");
+        texte.textContent = "🎮 " + (profil ? "@" + profil.pseudo : "Un pote") + " t'invite à jouer au morpion";
+
+        const actions = document.createElement("div");
+        actions.className = "invitation-jeu-actions";
+
+        const accepter = document.createElement("button");
+        accepter.className = "btn-accepter-jeu";
+        accepter.textContent = "Accepter";
+        accepter.addEventListener("click", function() {
+            accepterInvitationMorpion(partie.id);
+        });
+
+        const refuser = document.createElement("button");
+        refuser.className = "btn-refuser-jeu";
+        refuser.textContent = "Refuser";
+        refuser.addEventListener("click", function() {
+            refuserInvitationMorpion(partie.id);
+        });
+
+        actions.appendChild(accepter);
+        actions.appendChild(refuser);
+        bloc.appendChild(texte);
+        bloc.appendChild(actions);
+        zone.appendChild(bloc);
+    });
+}
+
+
+async function accepterInvitationMorpion(partieId) {
+
+    const { data, error } = await client
+        .from("parties_morpion")
+        .update({ statut: "en_cours" })
+        .eq("id", partieId)
+        .eq("joueur_o", utilisateur.id)
+        .eq("statut", "invitation")
+        .select()
+        .single();
+
+    if (error) {
+        alert("Impossible d'accepter la partie : " + error.message);
+        return;
+    }
+
+    partieMorpionActuelle = data;
+    symboleMorpion = "O";
+    afficherPartieMorpion(data);
+}
+
+
+async function refuserInvitationMorpion(partieId) {
+    const { error } = await client
+        .from("parties_morpion")
+        .update({ statut: "refusee" })
+        .eq("id", partieId)
+        .eq("joueur_o", utilisateur.id);
+
+    if (error) console.error(error);
+    await afficherJeux();
+}
+
+
+function afficherPartieMorpion(partie) {
+
+    const grille = Array.isArray(partie.grille)
+        ? partie.grille
+        : ["", "", "", "", "", "", "", "", ""];
+
+    const estMonTour = partie.statut === "en_cours" && partie.tour === symboleMorpion;
+
+    const nomAdversaire = symboleMorpion === "X"
+        ? "ton adversaire"
+        : "le créateur";
+
+    listeMessages.innerHTML = `
+        <div class="zone-morpion">
+            <h3>❌⭕ Morpion</h3>
+            <div class="info-morpion" id="infoMorpion"></div>
+            <div class="grille-morpion" id="grilleMorpion"></div>
+            <button class="btn-quitter-jeu" id="btnQuitterMorpion" type="button">Quitter la partie</button>
+        </div>
+    `;
+
+    const info = document.getElementById("infoMorpion");
+
+    if (partie.statut === "invitation") {
+        info.textContent = "Invitation envoyée. En attente de ton pote…";
+    } else if (partie.statut === "terminee") {
+        if (partie.gagnant === utilisateur.id) {
+            info.textContent = "🏆 Tu as gagné !";
+        } else if (partie.gagnant) {
+            info.textContent = "😄 Ton adversaire a gagné.";
+        } else {
+            info.textContent = "🤝 Match nul !";
+        }
+    } else if (partie.statut === "refusee") {
+        info.textContent = "Invitation refusée.";
+    } else {
+        info.textContent = estMonTour
+            ? "👉 C'est ton tour (" + symboleMorpion + ")."
+            : "⏳ C'est au tour de " + nomAdversaire + ".";
+    }
+
+    const zone = document.getElementById("grilleMorpion");
+
+    grille.forEach(function(valeur, index) {
+        const bouton = document.createElement("button");
+        bouton.className = "case-morpion";
+        bouton.type = "button";
+        bouton.textContent = valeur;
+        bouton.disabled = Boolean(valeur) || !estMonTour;
+        bouton.addEventListener("click", function() {
+            jouerCoupMorpion(index);
+        });
+        zone.appendChild(bouton);
+    });
+
+    document.getElementById("btnQuitterMorpion")
+        .addEventListener("click", quitterMorpion);
+}
+
+
+function calculerGagnantMorpion(grille) {
+    const lignes = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+
+    for (const ligne of lignes) {
+        const a = grille[ligne[0]];
+        const b = grille[ligne[1]];
+        const c = grille[ligne[2]];
+        if (a && a === b && b === c) return a;
+    }
+
+    if (grille.every(function(caseJeu) { return caseJeu; })) return "nul";
+    return null;
+}
+
+
+async function jouerCoupMorpion(index) {
+
+    const partie = partieMorpionActuelle;
+    if (!partie || partie.statut !== "en_cours" || partie.tour !== symboleMorpion) return;
+
+    const grille = Array.isArray(partie.grille)
+        ? [...partie.grille]
+        : ["", "", "", "", "", "", "", "", ""];
+
+    if (grille[index]) return;
+
+    grille[index] = symboleMorpion;
+
+    const resultat = calculerGagnantMorpion(grille);
+    const modifications = {
+        grille: grille,
+        tour: symboleMorpion === "X" ? "O" : "X"
+    };
+
+    if (resultat) {
+        modifications.statut = "terminee";
+        modifications.gagnant = resultat === "nul"
+            ? null
+            : (resultat === "X" ? partie.joueur_x : partie.joueur_o);
+    }
+
+    const { data, error } = await client
+        .from("parties_morpion")
+        .update(modifications)
+        .eq("id", partie.id)
+        .eq("statut", "en_cours")
+        .select()
+        .single();
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    partieMorpionActuelle = data;
+    afficherPartieMorpion(data);
+}
+
+
+async function quitterMorpion() {
+    const partie = partieMorpionActuelle;
+    if (!partie) {
+        afficherJeux();
+        return;
+    }
+
+    if (partie.statut === "invitation") {
+        await client.from("parties_morpion")
+            .update({ statut: "refusee" })
+            .eq("id", partie.id);
+    } else if (partie.statut === "en_cours") {
+        await client.from("parties_morpion")
+            .update({ statut: "terminee", gagnant: symboleMorpion === "X" ? partie.joueur_o : partie.joueur_x })
+            .eq("id", partie.id);
+    }
+
+    partieMorpionActuelle = null;
+    symboleMorpion = null;
+    await afficherJeux();
+}
+
+
+async function initialiserEcouteMorpion() {
+
+    if (canalMorpion) {
+        try { await client.removeChannel(canalMorpion); } catch (e) { console.error(e); }
+    }
+
+    canalMorpion = client
+        .channel("morpion-en-ligne")
+        .on("postgres_changes", {
+            event: "INSERT",
+            schema: "public",
+            table: "parties_morpion"
+        }, async function(payload) {
+            if (!utilisateur) return;
+            const partie = payload.new;
+
+            if (String(partie.joueur_o) === String(utilisateur.id) && partie.statut === "invitation") {
+                if (titrePage.textContent.includes("Jeux")) {
+                    await chargerInvitationsMorpion();
+                } else {
+                    afficherFenetreInvitationMorpion(partie);
+                }
+            }
+        })
+        .on("postgres_changes", {
+            event: "UPDATE",
+            schema: "public",
+            table: "parties_morpion"
+        }, function(payload) {
+            if (!utilisateur || !partieMorpionActuelle) return;
+            if (String(payload.new.id) !== String(partieMorpionActuelle.id)) return;
+
+            partieMorpionActuelle = payload.new;
+
+            if (String(payload.new.joueur_x) === String(utilisateur.id)) {
+                symboleMorpion = "X";
+            } else if (String(payload.new.joueur_o) === String(utilisateur.id)) {
+                symboleMorpion = "O";
+            }
+
+            if (titrePage.textContent.includes("Morpion")) {
+                afficherPartieMorpion(payload.new);
+            }
+        })
+        .subscribe();
+}
+
+
+function afficherFenetreInvitationMorpion(partie) {
+
+    if (document.querySelector(".fenetre-invitation-jeu")) return;
+
+    const fenetre = document.createElement("div");
+    fenetre.className = "fenetre-invitation-jeu";
+
+    const boite = document.createElement("div");
+    boite.className = "boite-invitation-jeu";
+
+    const titre = document.createElement("h2");
+    titre.textContent = "🎮 Invitation au morpion";
+
+    const texte = document.createElement("p");
+    texte.textContent = "Un pote t'invite à jouer au morpion !";
+
+    const actions = document.createElement("div");
+    actions.className = "actions-invitation-jeu";
+
+    const accepter = document.createElement("button");
+    accepter.textContent = "Accepter";
+    accepter.style.background = "var(--vert)";
+    accepter.style.color = "white";
+    accepter.addEventListener("click", async function() {
+        fenetre.remove();
+        await accepterInvitationMorpion(partie.id);
+    });
+
+    const refuser = document.createElement("button");
+    refuser.textContent = "Refuser";
+    refuser.style.background = "#fee2e2";
+    refuser.style.color = "#b91c1c";
+    refuser.addEventListener("click", async function() {
+        fenetre.remove();
+        await refuserInvitationMorpion(partie.id);
+    });
+
+    actions.appendChild(accepter);
+    actions.appendChild(refuser);
+    boite.appendChild(titre);
+    boite.appendChild(texte);
+    boite.appendChild(actions);
+    fenetre.appendChild(boite);
+    document.body.appendChild(fenetre);
+}
+
 
 
 async function afficherPotes() {
