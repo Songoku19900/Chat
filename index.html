@@ -3930,19 +3930,29 @@ async function initialiserEcouteMorpion() {
             schema: "public",
             table: "parties_morpion"
         }, function(payload) {
-            if (!utilisateur || !partieMorpionActuelle) return;
-            if (String(payload.new.id) !== String(partieMorpionActuelle.id)) return;
+            if (!utilisateur) return;
 
-            partieMorpionActuelle = payload.new;
+            const partie = payload.new;
+            const concerneUtilisateur =
+                String(partie.joueur_x) === String(utilisateur.id) ||
+                String(partie.joueur_o) === String(utilisateur.id);
 
-            if (String(payload.new.joueur_x) === String(utilisateur.id)) {
+            if (!concerneUtilisateur) return;
+
+            partieMorpionActuelle = partie;
+
+            if (String(partie.joueur_x) === String(utilisateur.id)) {
                 symboleMorpion = "X";
-            } else if (String(payload.new.joueur_o) === String(utilisateur.id)) {
+            } else if (String(partie.joueur_o) === String(utilisateur.id)) {
                 symboleMorpion = "O";
             }
 
+            if (partie.statut !== "invitation") {
+                arreterSurveillanceMorpion();
+            }
+
             if (titrePage.textContent.includes("Morpion")) {
-                afficherPartieMorpion(payload.new);
+                afficherPartieMorpion(partie);
             }
         })
         .subscribe();
