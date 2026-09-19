@@ -948,6 +948,143 @@ header {
 ========================================================= */
 
 
+
+/* =========================================================
+   APPELS AUDIO
+========================================================= */
+
+.btn-appel {
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 12px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-appel:hover {
+    background: #bbf7d0;
+}
+
+.fenetre-appel {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, .55);
+    box-sizing: border-box;
+}
+
+.carte-appel {
+    width: min(92vw, 390px);
+    padding: 28px 22px;
+    border-radius: 22px;
+    background: white;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    text-align: center;
+}
+
+.appel-icone {
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #dcfce7;
+    font-size: 34px;
+}
+
+.appel-nom {
+    margin-bottom: 7px;
+    color: var(--texte);
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.appel-statut {
+    margin-bottom: 22px;
+    color: var(--texte-secondaire);
+    font-size: 14px;
+}
+
+.appel-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.appel-actions button {
+    flex: 1;
+    min-height: 48px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-accepter-appel {
+    background: #22c55e;
+    color: white;
+}
+
+.btn-refuser-appel,
+.btn-raccrocher-appel {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-raccrocher-appel {
+    width: 100%;
+}
+
+.audio-distant {
+    display: none;
+}
+
+@media (max-width: 750px) {
+    .btn-appel {
+        margin-left: auto;
+        min-width: 44px;
+        width: 44px;
+        padding: 0;
+    }
+
+    .fenetre-appel {
+        align-items: flex-end;
+        padding: 12px;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    }
+
+    .carte-appel {
+        width: 100%;
+        max-width: none;
+        padding: 24px 18px;
+        border-radius: 20px;
+    }
+
+    .appel-actions button {
+        min-height: 52px;
+    }
+}
+
+@media (max-width: 360px) {
+    .btn-appel {
+        min-width: 40px;
+        width: 40px;
+        min-height: 40px;
+    }
+}
+
 @media (max-width: 750px) {
 
     /* ===== Téléphone : navigation en bas ===== */
@@ -1534,6 +1671,40 @@ let utilisateurPriveActuel = null;
 
 
 /* =========================================================
+   VARIABLES APPELS AUDIO
+========================================================= */
+
+let canalAppels = null;
+
+let canalSignauxAppel = null;
+
+let appelActuelId = null;
+
+let appelActuelProfil = null;
+
+let peerConnectionAppel = null;
+
+let fluxMicroAppel = null;
+
+let audioDistantAppel = null;
+
+let fenetreAppel = null;
+
+let appelEnCours = false;
+
+const SERVEURS_WEBRTC = {
+    iceServers: [
+        {
+            urls: "stun:stun.l.google.com:19302"
+        },
+        {
+            urls: "stun:stun1.l.google.com:19302"
+        }
+    ]
+};
+
+
+/* =========================================================
    ELEMENTS
 ========================================================= */
 
@@ -1932,6 +2103,8 @@ async function ouvrirApplication(profil) {
 
 
     await demarrerPresence();
+
+    await initialiserEcouteAppels();
 
 
     afficherAccueil();
@@ -3493,6 +3666,39 @@ function afficherEnteteConversation(
     );
 
 
+    const boutonAppel =
+        document.createElement("button");
+
+    boutonAppel.className =
+        "btn-appel";
+
+    boutonAppel.type =
+        "button";
+
+    boutonAppel.title =
+        "Appeler";
+
+    boutonAppel.textContent =
+        "📞";
+
+
+    boutonAppel.addEventListener(
+        "click",
+        function() {
+
+            lancerAppel(
+                profil
+            );
+
+        }
+    );
+
+
+    entete.appendChild(
+        boutonAppel
+    );
+
+
     listeMessages.appendChild(
         entete
     );
@@ -4346,6 +4552,1421 @@ inputImage.addEventListener(
 );
 
 
+
+/* =========================================================
+   APPELS AUDIO - INTERFACE
+========================================================= */
+
+function afficherFenetreAppel(
+    pseudo,
+    statut,
+    entrant
+) {
+
+    fermerFenetreAppel();
+
+
+    fenetreAppel =
+        document.createElement("div");
+
+    fenetreAppel.className =
+        "fenetre-appel";
+
+
+    const carte =
+        document.createElement("div");
+
+    carte.className =
+        "carte-appel";
+
+
+    const icone =
+        document.createElement("div");
+
+    icone.className =
+        "appel-icone";
+
+    icone.textContent =
+        "📞";
+
+
+    const nom =
+        document.createElement("div");
+
+    nom.className =
+        "appel-nom";
+
+    nom.textContent =
+        "@" + pseudo;
+
+
+    const texteStatut =
+        document.createElement("div");
+
+    texteStatut.className =
+        "appel-statut";
+
+    texteStatut.textContent =
+        statut;
+
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "appel-actions";
+
+
+    if (entrant) {
+
+        const accepter =
+            document.createElement("button");
+
+        accepter.className =
+            "btn-accepter-appel";
+
+        accepter.textContent =
+            "📞 Accepter";
+
+
+        const refuser =
+            document.createElement("button");
+
+        refuser.className =
+            "btn-refuser-appel";
+
+        refuser.textContent =
+            "✕ Refuser";
+
+
+        accepter.addEventListener(
+            "click",
+            accepterAppel
+        );
+
+        refuser.addEventListener(
+            "click",
+            refuserAppel
+        );
+
+
+        actions.appendChild(
+            accepter
+        );
+
+        actions.appendChild(
+            refuser
+        );
+
+    } else {
+
+        const raccrocher =
+            document.createElement("button");
+
+        raccrocher.className =
+            "btn-raccrocher-appel";
+
+        raccrocher.textContent =
+            "📵 Raccrocher";
+
+
+        raccrocher.addEventListener(
+            "click",
+            function() {
+
+                terminerAppel(
+                    "terminee",
+                    true
+                );
+
+            }
+        );
+
+
+        actions.appendChild(
+            raccrocher
+        );
+
+    }
+
+
+    carte.appendChild(
+        icone
+    );
+
+    carte.appendChild(
+        nom
+    );
+
+    carte.appendChild(
+        texteStatut
+    );
+
+    carte.appendChild(
+        actions
+    );
+
+    fenetreAppel.appendChild(
+        carte
+    );
+
+    document.body.appendChild(
+        fenetreAppel
+    );
+
+}
+
+
+function fermerFenetreAppel() {
+
+    if (
+        fenetreAppel
+    ) {
+
+        fenetreAppel.remove();
+
+        fenetreAppel =
+            null;
+
+    }
+
+}
+
+
+/* =========================================================
+   APPELS AUDIO - WEBRTC
+========================================================= */
+
+function creerConnexionWebRTC() {
+
+    if (
+        peerConnectionAppel
+    ) {
+
+        peerConnectionAppel.close();
+
+    }
+
+
+    peerConnectionAppel =
+        new RTCPeerConnection(
+            SERVEURS_WEBRTC
+        );
+
+
+    peerConnectionAppel.ontrack =
+        function(event) {
+
+            if (
+                !audioDistantAppel
+            ) {
+
+                audioDistantAppel =
+                    document.createElement("audio");
+
+                audioDistantAppel.className =
+                    "audio-distant";
+
+                audioDistantAppel.autoplay =
+                    true;
+
+                audioDistantAppel.playsInline =
+                    true;
+
+                document.body.appendChild(
+                    audioDistantAppel
+                );
+
+            }
+
+
+            if (
+                event.streams &&
+                event.streams[0]
+            ) {
+
+                audioDistantAppel.srcObject =
+                    event.streams[0];
+
+            }
+
+        };
+
+
+    peerConnectionAppel.onicecandidate =
+        async function(event) {
+
+            if (
+                !event.candidate ||
+                !appelActuelId ||
+                !utilisateur
+            ) {
+
+                return;
+
+            }
+
+
+            await envoyerSignalAppel(
+                "candidate",
+                event.candidate.toJSON()
+            );
+
+        };
+
+
+    peerConnectionAppel.onconnectionstatechange =
+        function() {
+
+            if (
+                !peerConnectionAppel
+            ) {
+
+                return;
+
+            }
+
+
+            const etat =
+                peerConnectionAppel.connectionState;
+
+
+            if (
+                etat === "failed" ||
+                etat === "closed"
+            ) {
+
+                terminerAppel(
+                    "terminee",
+                    false
+                );
+
+            }
+
+        };
+
+
+    return peerConnectionAppel;
+
+}
+
+
+async function preparerMicroAppel() {
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        alert(
+            "Ton navigateur ne permet pas les appels audio."
+        );
+
+        return false;
+
+    }
+
+
+    try {
+
+        fluxMicroAppel =
+            await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Impossible d'utiliser le micro. Autorise le microphone dans ton navigateur."
+        );
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+async function creerCanalSignauxAppel(
+    appelId
+) {
+
+    if (
+        canalSignauxAppel
+    ) {
+
+        await client.removeChannel(
+            canalSignauxAppel
+        );
+
+        canalSignauxAppel =
+            null;
+
+    }
+
+
+    canalSignauxAppel =
+        client
+            .channel(
+                "signaux-appel-" +
+                appelId
+            )
+            .on(
+                "postgres_changes",
+                {
+
+                    event: "INSERT",
+
+                    schema: "public",
+
+                    table: "signaux_appels",
+
+                    filter:
+                        "appel_id=eq." +
+                        appelId
+
+                },
+                async function(payload) {
+
+                    const signal =
+                        payload.new;
+
+
+                    if (
+                        !utilisateur ||
+                        String(
+                            signal.expediteur_id
+                        ) ===
+                        String(
+                            utilisateur.id
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    await traiterSignalAppel(
+                        signal
+                    );
+
+                }
+            )
+            .subscribe();
+
+
+    /*
+       On recharge aussi les signaux déjà envoyés.
+       Cela évite de rater l'offre si elle a été créée
+       juste avant la connexion au canal.
+    */
+
+    const {
+        data: signaux,
+        error
+    } = await client
+        .from("signaux_appels")
+        .select("*")
+        .eq(
+            "appel_id",
+            appelId
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (
+        error
+    ) {
+
+        console.error(
+            "Erreur chargement signaux :",
+            error
+        );
+
+        return;
+
+    }
+
+
+    if (
+        Array.isArray(signaux)
+    ) {
+
+        for (
+            const signal of signaux
+        ) {
+
+            if (
+                utilisateur &&
+                String(
+                    signal.expediteur_id
+                ) !==
+                String(
+                    utilisateur.id
+                )
+            ) {
+
+                await traiterSignalAppel(
+                    signal
+                );
+
+            }
+
+        }
+
+    }
+
+}
+
+
+async function envoyerSignalAppel(
+    type,
+    contenu
+) {
+
+    if (
+        !appelActuelId ||
+        !utilisateur
+    ) {
+
+        return;
+
+    }
+
+
+    const {
+        error
+    } = await client
+        .from("signaux_appels")
+        .insert({
+
+            appel_id:
+                appelActuelId,
+
+            expediteur_id:
+                utilisateur.id,
+
+            type_signal:
+                type,
+
+            contenu:
+                contenu
+
+        });
+
+
+    if (
+        error
+    ) {
+
+        console.error(
+            "Erreur signal appel :",
+            error
+        );
+
+    }
+
+}
+
+
+async function traiterSignalAppel(
+    signal
+) {
+
+    if (
+        !peerConnectionAppel ||
+        !signal ||
+        !signal.contenu
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        if (
+            signal.type_signal ===
+            "answer"
+        ) {
+
+            if (
+                !peerConnectionAppel.currentRemoteDescription
+            ) {
+
+                await peerConnectionAppel.setRemoteDescription(
+                    new RTCSessionDescription(
+                        signal.contenu
+                    )
+                );
+
+            }
+
+        }
+
+
+        if (
+            signal.type_signal ===
+            "candidate"
+        ) {
+
+            try {
+
+                await peerConnectionAppel.addIceCandidate(
+                    new RTCIceCandidate(
+                        signal.contenu
+                    )
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "Candidat ICE ignoré :",
+                    error
+                );
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Erreur WebRTC :",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   APPELS AUDIO - LANCER UN APPEL
+========================================================= */
+
+async function lancerAppel(
+    profil
+) {
+
+    if (
+        !utilisateur ||
+        !profil
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        appelEnCours
+    ) {
+
+        alert(
+            "Tu es déjà en appel."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        String(
+            profil.id
+        ) ===
+        String(
+            utilisateur.id
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !conversationActuelle ||
+        String(
+            utilisateurPriveActuel &&
+            utilisateurPriveActuel.id
+        ) !==
+        String(
+            profil.id
+        )
+    ) {
+
+        alert(
+            "Ouvre d'abord la conversation avec cette personne."
+        );
+
+        return;
+
+    }
+
+
+    const microPret =
+        await preparerMicroAppel();
+
+
+    if (
+        !microPret
+    ) {
+
+        return;
+
+    }
+
+
+    appelEnCours =
+        true;
+
+    appelActuelProfil =
+        profil;
+
+
+    const {
+        data: appel,
+        error
+    } = await client
+        .from("appels")
+        .insert({
+
+            appelant_id:
+                utilisateur.id,
+
+            appele_id:
+                profil.id,
+
+            conversation_id:
+                conversationActuelle.id,
+
+            statut:
+                "sonnerie"
+
+        })
+        .select()
+        .single();
+
+
+    if (
+        error ||
+        !appel
+    ) {
+
+        console.error(error);
+
+        alert(
+            "Impossible de lancer l'appel : " +
+            (
+                error
+                    ? error.message
+                    : "erreur inconnue"
+            )
+        );
+
+        nettoyerAppelLocal();
+
+        return;
+
+    }
+
+
+    appelActuelId =
+        appel.id;
+
+
+    afficherFenetreAppel(
+        profil.pseudo,
+        "Appel en cours...",
+        false
+    );
+
+
+    creerConnexionWebRTC();
+
+
+    fluxMicroAppel
+        .getTracks()
+        .forEach(
+            function(track) {
+
+                peerConnectionAppel.addTrack(
+                    track,
+                    fluxMicroAppel
+                );
+
+            }
+        );
+
+
+    await creerCanalSignauxAppel(
+        appelActuelId
+    );
+
+
+    try {
+
+        const offre =
+            await peerConnectionAppel.createOffer();
+
+
+        await peerConnectionAppel.setLocalDescription(
+            offre
+        );
+
+
+        await envoyerSignalAppel(
+            "offer",
+            {
+                type:
+                    offre.type,
+
+                sdp:
+                    offre.sdp
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Impossible de démarrer l'appel."
+        );
+
+        await terminerAppel(
+            "terminee",
+            true
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   APPELS AUDIO - APPEL ENTRANT
+========================================================= */
+
+async function recevoirAppelEntrant(
+    appel
+) {
+
+    if (
+        !utilisateur ||
+        !appel
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        String(
+            appel.appele_id
+        ) !==
+        String(
+            utilisateur.id
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        appel.statut !==
+        "sonnerie"
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        appelEnCours
+    ) {
+
+        /*
+           Si la personne est déjà en appel,
+           on refuse automatiquement le nouvel appel.
+        */
+
+        await client
+            .from("appels")
+            .update({
+                statut:
+                    "occupe"
+            })
+            .eq(
+                "id",
+                appel.id
+            );
+
+        return;
+
+    }
+
+
+    const {
+        data: profil,
+        error
+    } = await client
+        .from("profils")
+        .select("id, pseudo")
+        .eq(
+            "id",
+            appel.appelant_id
+        )
+        .maybeSingle();
+
+
+    if (
+        error ||
+        !profil
+    ) {
+
+        console.error(error);
+
+        return;
+
+    }
+
+
+    appelActuelId =
+        appel.id;
+
+    appelActuelProfil =
+        profil;
+
+    appelEnCours =
+        true;
+
+
+    afficherFenetreAppel(
+        profil.pseudo,
+        "📞 Appel entrant...",
+        true
+    );
+
+}
+
+
+async function accepterAppel() {
+
+    if (
+        !appelActuelId ||
+        !appelActuelProfil
+    ) {
+
+        return;
+
+    }
+
+
+    const {
+        data: appel,
+        error
+    } = await client
+        .from("appels")
+        .select("*")
+        .eq(
+            "id",
+            appelActuelId
+        )
+        .maybeSingle();
+
+
+    if (
+        error ||
+        !appel
+    ) {
+
+        alert(
+            "Cet appel n'est plus disponible."
+        );
+
+        nettoyerAppelLocal();
+
+        return;
+
+    }
+
+
+    const microPret =
+        await preparerMicroAppel();
+
+
+    if (
+        !microPret
+    ) {
+
+        nettoyerAppelLocal();
+
+        return;
+
+    }
+
+
+    const {
+        data: signaux,
+        error: erreurSignaux
+    } = await client
+        .from("signaux_appels")
+        .select("*")
+        .eq(
+            "appel_id",
+            appelActuelId
+        )
+        .eq(
+            "type_signal",
+            "offer"
+        )
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        )
+        .limit(1);
+
+
+    if (
+        erreurSignaux ||
+        !signaux ||
+        signaux.length === 0
+    ) {
+
+        alert(
+            "L'offre de l'appel n'est pas encore arrivée. Réessaie dans un instant."
+        );
+
+        nettoyerAppelLocal();
+
+        return;
+
+    }
+
+
+    const offre =
+        signaux[0].contenu;
+
+
+    creerConnexionWebRTC();
+
+
+    fluxMicroAppel
+        .getTracks()
+        .forEach(
+            function(track) {
+
+                peerConnectionAppel.addTrack(
+                    track,
+                    fluxMicroAppel
+                );
+
+            }
+        );
+
+
+    try {
+
+        await peerConnectionAppel.setRemoteDescription(
+            new RTCSessionDescription(
+                offre
+            )
+        );
+
+
+        await creerCanalSignauxAppel(
+            appelActuelId
+        );
+
+
+        const reponse =
+            await peerConnectionAppel.createAnswer();
+
+
+        await peerConnectionAppel.setLocalDescription(
+            reponse
+        );
+
+
+        await envoyerSignalAppel(
+            "answer",
+            {
+                type:
+                    reponse.type,
+
+                sdp:
+                    reponse.sdp
+            }
+        );
+
+
+        await client
+            .from("appels")
+            .update({
+                statut:
+                    "acceptee"
+            })
+            .eq(
+                "id",
+                appelActuelId
+            );
+
+
+        afficherFenetreAppel(
+            appelActuelProfil.pseudo,
+            "🟢 Appel connecté",
+            false
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Impossible d'accepter l'appel."
+        );
+
+        await terminerAppel(
+            "terminee",
+            true
+        );
+
+    }
+
+}
+
+
+async function refuserAppel() {
+
+    if (
+        appelActuelId
+    ) {
+
+        await client
+            .from("appels")
+            .update({
+                statut:
+                    "refusee"
+            })
+            .eq(
+                "id",
+                appelActuelId
+            );
+
+    }
+
+
+    nettoyerAppelLocal();
+
+}
+
+
+/* =========================================================
+   APPELS AUDIO - SURVEILLANCE DES APPELS
+========================================================= */
+
+async function initialiserEcouteAppels() {
+
+    if (
+        canalAppels
+    ) {
+
+        return;
+
+    }
+
+
+    canalAppels =
+        client
+            .channel(
+                "appels-globaux"
+            )
+            .on(
+                "postgres_changes",
+                {
+
+                    event: "INSERT",
+
+                    schema: "public",
+
+                    table: "appels"
+
+                },
+                async function(payload) {
+
+                    if (
+                        !utilisateur
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const appel =
+                        payload.new;
+
+
+                    if (
+                        String(
+                            appel.appele_id
+                        ) ===
+                        String(
+                            utilisateur.id
+                        )
+                    ) {
+
+                        await recevoirAppelEntrant(
+                            appel
+                        );
+
+                    }
+
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+
+                    event: "UPDATE",
+
+                    schema: "public",
+
+                    table: "appels"
+
+                },
+                async function(payload) {
+
+                    if (
+                        !utilisateur ||
+                        !appelActuelId
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        String(
+                            payload.new.id
+                        ) !==
+                        String(
+                            appelActuelId
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const statut =
+                        payload.new.statut;
+
+
+                    if (
+                        statut === "refusee" ||
+                        statut === "occupe" ||
+                        statut === "terminee"
+                    ) {
+
+                        if (
+                            statut !== "terminee" ||
+                            appelEnCours
+                        ) {
+
+                            nettoyerAppelLocal();
+
+                        }
+
+                    }
+
+                }
+            )
+            .subscribe();
+
+}
+
+
+/* =========================================================
+   APPELS AUDIO - NETTOYAGE
+========================================================= */
+
+async function nettoyerAppelLocal() {
+
+    fermerFenetreAppel();
+
+
+    if (
+        canalSignauxAppel
+    ) {
+
+        try {
+
+            await client.removeChannel(
+                canalSignauxAppel
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+        canalSignauxAppel =
+            null;
+
+    }
+
+
+    if (
+        peerConnectionAppel
+    ) {
+
+        try {
+
+            peerConnectionAppel.ontrack =
+                null;
+
+            peerConnectionAppel.onicecandidate =
+                null;
+
+            peerConnectionAppel.close();
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+        peerConnectionAppel =
+            null;
+
+    }
+
+
+    if (
+        fluxMicroAppel
+    ) {
+
+        fluxMicroAppel
+            .getTracks()
+            .forEach(
+                function(track) {
+
+                    track.stop();
+
+                }
+            );
+
+        fluxMicroAppel =
+            null;
+
+    }
+
+
+    if (
+        audioDistantAppel
+    ) {
+
+        audioDistantAppel.pause();
+
+        audioDistantAppel.srcObject =
+            null;
+
+        audioDistantAppel.remove();
+
+        audioDistantAppel =
+            null;
+
+    }
+
+
+    appelActuelId =
+        null;
+
+    appelActuelProfil =
+        null;
+
+    appelEnCours =
+        false;
+
+}
+
+
+async function terminerAppel(
+    statut,
+    mettreAJourServeur
+) {
+
+    const id =
+        appelActuelId;
+
+
+    if (
+        mettreAJourServeur &&
+        id
+    ) {
+
+        const {
+            error
+        } = await client
+            .from("appels")
+            .update({
+                statut:
+                    statut
+            })
+            .eq(
+                "id",
+                id
+            );
+
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Erreur fermeture appel :",
+                error
+            );
+
+        }
+
+    }
+
+
+    await nettoyerAppelLocal();
+
+}
+
+
 /* =========================================================
    TEMPS REEL MESSAGES PRIVES
 ========================================================= */
@@ -4501,6 +6122,26 @@ document.getElementById(
         fermerConversationPrivee();
 
 
+        if (
+            appelActuelId
+        ) {
+
+            try {
+
+                await terminerAppel(
+                    "terminee",
+                    true
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        }
+
+
         /*
            PRESENCE
         */
@@ -4523,6 +6164,20 @@ document.getElementById(
             );
 
             canalPresence =
+                null;
+
+        }
+
+
+        if (
+            canalAppels
+        ) {
+
+            await client.removeChannel(
+                canalAppels
+            );
+
+            canalAppels =
                 null;
 
         }
