@@ -947,78 +947,227 @@ header {
    RESPONSIVE
 ========================================================= */
 
+
 @media (max-width: 750px) {
 
+    /* ===== Téléphone : navigation en bas ===== */
+
+    html,
+    body {
+        width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    body {
+        -webkit-tap-highlight-color: transparent;
+    }
+
     header {
-        padding: 0 14px;
+        height: 58px;
+        min-height: 58px;
+        padding: 0 10px;
+        gap: 8px;
+        position: relative;
+        z-index: 20;
     }
 
     .conteneur {
-        min-height: calc(100vh - 68px);
+        display: block;
+        width: 100%;
+        min-height: calc(100dvh - 58px);
+        height: calc(100dvh - 58px);
+        position: relative;
     }
 
+    /* La barre latérale devient une barre de navigation tactile en bas */
     .menu {
-        width: 70px;
-
-        padding: 12px 9px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: calc(70px + env(safe-area-inset-bottom));
+        min-height: 70px;
+        padding: 4px 4px env(safe-area-inset-bottom);
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: 2px;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,.12);
+        z-index: 1000;
+        box-sizing: border-box;
     }
 
     .menu-titre,
     .menu-separation,
     .mon-compte {
-        display: none;
+        display: none !important;
     }
 
     .menu button {
+        flex: 1 1 0;
+        min-width: 0;
+        height: 62px;
+        padding: 6px 3px;
+        margin: 0;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
         justify-content: center;
-
-        padding: 13px 8px;
-
-        font-size: 0;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        line-height: 1.05;
+        white-space: normal;
+        text-align: center;
     }
 
     .menu button span {
+        display: block;
         font-size: 22px;
+        line-height: 1;
+    }
+
+    .discussion {
+        width: 100%;
+        height: calc(100dvh - 58px);
+        min-height: 0;
+        padding-bottom: calc(76px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .titre-discussion {
-        padding: 18px;
+        min-height: 54px;
+        padding: 10px 12px;
+        gap: 8px;
+        box-sizing: border-box;
     }
 
     #listeMessages {
-        padding: 18px;
+        padding: 12px;
+        padding-bottom: 12px;
+        min-height: 0;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
+    .message,
+    .bulle-privee {
+        max-width: 88%;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    /* Zone d'envoi plus compacte et facile à toucher */
     .zone-envoi {
-        padding: 12px;
+        padding: 8px;
+        gap: 6px;
+        flex-wrap: nowrap;
+        box-sizing: border-box;
+    }
+
+    #messageInput {
+        min-width: 0;
+        flex: 1 1 auto;
+        height: 44px;
+        font-size: 16px; /* évite le zoom automatique sur iPhone */
+    }
+
+    #btnVocal,
+    #btnImage {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-radius: 12px;
+        font-size: 20px;
     }
 
     #btnEnvoyer {
-        padding: 0 15px;
+        flex: 0 0 44px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        padding: 0;
+        border-radius: 12px;
+        font-size: 0;
     }
 
-    .message {
-        max-width: 90%;
+    #btnEnvoyer::after {
+        content: "➤";
+        font-size: 19px;
     }
 
-    .bulle-privee {
-        max-width: 90%;
+    #statutVocal {
+        max-width: 100%;
+        font-size: 12px;
     }
 
     .grille-utilisateurs {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
 
     .btn-parler {
-        padding: 8px;
+        min-height: 44px;
+        padding: 9px 12px;
+    }
+
+    /* Accueil et profil */
+    .accueil-entete {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .boite-connexion {
+        width: calc(100% - 28px);
+        max-width: 520px;
+        margin: 14px auto;
+        padding: 22px 18px;
+        box-sizing: border-box;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+        touch-action: manipulation;
+    }
+
+    /* Évite que le contenu passe derrière la barre du bas */
+    .accueil,
+    .profil,
+    .utilisateurs,
+    .public,
+    .prive {
+        padding-bottom: calc(82px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
     }
 }
 
-
 @media (max-width: 480px) {
 
-    .boite-connexion {
-        padding: 25px 20px;
+    header {
+        height: 54px;
+        min-height: 54px;
+        padding: 0 8px;
+    }
+
+    .conteneur {
+        min-height: calc(100dvh - 54px);
+        height: calc(100dvh - 54px);
+    }
+
+    .discussion {
+        height: calc(100dvh - 54px);
     }
 
     .logo-chat-text {
@@ -1026,30 +1175,89 @@ header {
     }
 
     .btn-deconnexion {
-        font-size: 12px;
+        font-size: 11px;
+        padding: 7px 8px;
     }
 
-    .accueil-entete {
-        align-items: flex-start;
-
-        flex-direction: column;
+    .titre-discussion {
+        padding: 8px 10px;
     }
 
+    #listeMessages {
+        padding: 10px;
+    }
+
+    .zone-envoi {
+        padding: 6px;
+        gap: 5px;
+    }
+
+    #btnVocal,
+    #btnImage,
+    #btnEnvoyer {
+        flex-basis: 42px;
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        min-height: 42px;
+        border-radius: 11px;
+    }
+
+    #messageInput {
+        height: 42px;
+    }
+
+    .message,
+    .bulle-privee {
+        max-width: 92%;
+    }
+
+    .menu {
+        min-height: 68px;
+        height: calc(68px + env(safe-area-inset-bottom));
+    }
+
+    .menu button {
+        height: 60px;
+        font-size: 10px;
+        border-radius: 10px;
+    }
+
+    .menu button span {
+        font-size: 21px;
+    }
+
+    .boite-connexion {
+        width: calc(100% - 20px);
+        padding: 20px 14px;
+    }
 }
 
+/* Téléphones très étroits */
+@media (max-width: 360px) {
 
-/* =========================================================
-   SCROLLBAR
-========================================================= */
+    .menu button {
+        font-size: 9px;
+    }
 
-#listeMessages::-webkit-scrollbar {
-    width: 8px;
-}
+    .menu button span {
+        font-size: 19px;
+    }
 
-#listeMessages::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    #btnVocal,
+    #btnImage,
+    #btnEnvoyer {
+        flex-basis: 39px;
+        width: 39px;
+        min-width: 39px;
+        height: 39px;
+        min-height: 39px;
+    }
 
-    border-radius: 10px;
+    #messageInput {
+        height: 39px;
+        font-size: 16px;
+    }
 }
 
 </style>
