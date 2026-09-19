@@ -2012,7 +2012,7 @@ function demarrerSurveillanceMorpion(partieId) {
             symboleMorpion = "O";
         }
 
-        if (titrePage.textContent.includes("Morpion")) {
+        if (document.getElementById("grilleMorpion")) {
             afficherPartieMorpion(data);
         }
 
@@ -4005,7 +4005,7 @@ async function initialiserEcouteMorpion() {
                 arreterSurveillanceMorpion();
             }
 
-            if (titrePage.textContent.includes("Morpion")) {
+            if (document.getElementById("grilleMorpion")) {
                 afficherPartieMorpion(partie);
             }
         })
