@@ -1978,6 +1978,51 @@ let canalMorpion = null;
 let partieMorpionActuelle = null;
 let symboleMorpion = null;
 
+let surveillanceMorpion = null;
+
+function arreterSurveillanceMorpion() {
+    if (surveillanceMorpion) {
+        clearInterval(surveillanceMorpion);
+        surveillanceMorpion = null;
+    }
+}
+
+function demarrerSurveillanceMorpion(partieId) {
+    arreterSurveillanceMorpion();
+
+    surveillanceMorpion = setInterval(async function () {
+        if (!utilisateur || !partieMorpionActuelle) {
+            arreterSurveillanceMorpion();
+            return;
+        }
+
+        const { data, error } = await client
+            .from("parties_morpion")
+            .select("*")
+            .eq("id", partieId)
+            .maybeSingle();
+
+        if (error || !data) return;
+
+        partieMorpionActuelle = data;
+
+        if (String(data.joueur_x) === String(utilisateur.id)) {
+            symboleMorpion = "X";
+        } else if (String(data.joueur_o) === String(utilisateur.id)) {
+            symboleMorpion = "O";
+        }
+
+        if (titrePage.textContent.includes("Morpion")) {
+            afficherPartieMorpion(data);
+        }
+
+        if (data.statut !== "invitation") {
+            arreterSurveillanceMorpion();
+        }
+    }, 1500);
+}
+
+
 
 
 /* =========================================================
@@ -3654,6 +3699,7 @@ async function inviterAuMorpion(profil) {
     partieMorpionActuelle = data;
     symboleMorpion = "X";
     afficherPartieMorpion(data);
+    demarrerSurveillanceMorpion(data.id);
 }
 
 
@@ -3740,17 +3786,25 @@ async function accepterInvitationMorpion(partieId) {
     partieMorpionActuelle = data;
     symboleMorpion = "O";
     afficherPartieMorpion(data);
+    demarrerSurveillanceMorpion(data.id);
 }
 
 
 async function refuserInvitationMorpion(partieId) {
+
     const { error } = await client
         .from("parties_morpion")
         .update({ statut: "refusee" })
         .eq("id", partieId)
-        .eq("joueur_o", utilisateur.id);
+        .eq("joueur_o", utilisateur.id)
+        .eq("statut", "invitation");
 
-    if (error) console.error(error);
+    if (error) {
+        console.error("Erreur refus Morpion :", error);
+        alert("Impossible de refuser l'invitation.");
+        return;
+    }
+
     await afficherJeux();
 }
 
