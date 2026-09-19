@@ -906,6 +906,118 @@ header {
 
 
 /* =========================================================
+   LECTEUR VOCAL SIMPLE - MOBILE ET PC
+========================================================= */
+
+.lecteur-vocal {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: min(310px, 100%);
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 5px;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    border-radius: 14px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.bouton-vocal-lire {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--primaire);
+    color: white;
+    font-size: 19px;
+    line-height: 44px;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bouton-vocal-lire:active {
+    transform: scale(.96);
+}
+
+.barre-vocal {
+    flex: 1;
+    min-width: 70px;
+    width: 100%;
+    height: 7px;
+    margin: 0;
+    accent-color: var(--primaire);
+    cursor: pointer;
+}
+
+.duree-vocal {
+    min-width: 43px;
+    color: var(--texte-secondaire);
+    font-size: 12px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.lecteur-vocal audio {
+    display: none;
+}
+
+@media (max-width: 750px) {
+    .lecteur-vocal {
+        width: min(100%, 330px);
+        padding: 7px 8px;
+        gap: 8px;
+    }
+
+    .bouton-vocal-lire {
+        width: 46px;
+        min-width: 46px;
+        height: 46px;
+        line-height: 46px;
+        font-size: 20px;
+    }
+
+    .barre-vocal {
+        min-width: 60px;
+        height: 8px;
+    }
+
+    .duree-vocal {
+        min-width: 42px;
+        font-size: 11px;
+    }
+
+    .bulle-privee,
+    .message {
+        max-width: 92%;
+    }
+}
+
+@media (max-width: 380px) {
+    .lecteur-vocal {
+        gap: 6px;
+        padding: 6px;
+    }
+
+    .bouton-vocal-lire {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        line-height: 44px;
+    }
+
+    .duree-vocal {
+        min-width: 38px;
+        font-size: 10px;
+    }
+}
+
+
+/* =========================================================
    RECHERCHE POTES
 ========================================================= */
 
@@ -2799,6 +2911,120 @@ async function chargerMessages() {
    AFFICHER MESSAGE PUBLIC
 ========================================================= */
 
+
+function formaterDureeVocal(secondes) {
+    if (!Number.isFinite(secondes) || secondes < 0) {
+        return "0:00";
+    }
+
+    const total = Math.floor(secondes);
+    const minutes = Math.floor(total / 60);
+    const secondesRestantes = total % 60;
+
+    return minutes + ":" +
+        String(secondesRestantes).padStart(2, "0");
+}
+
+
+function creerLecteurVocal(url) {
+
+    const lecteur = document.createElement("div");
+    lecteur.className = "lecteur-vocal";
+
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    audio.src = url;
+
+    const bouton = document.createElement("button");
+    bouton.type = "button";
+    bouton.className = "bouton-vocal-lire";
+    bouton.textContent = "▶";
+    bouton.setAttribute("aria-label", "Lire le vocal");
+
+    const barre = document.createElement("input");
+    barre.type = "range";
+    barre.className = "barre-vocal";
+    barre.min = "0";
+    barre.max = "100";
+    barre.value = "0";
+    barre.step = "0.1";
+    barre.setAttribute("aria-label", "Position du vocal");
+
+    const duree = document.createElement("span");
+    duree.className = "duree-vocal";
+    duree.textContent = "0:00";
+
+    lecteur.appendChild(bouton);
+    lecteur.appendChild(barre);
+    lecteur.appendChild(duree);
+    lecteur.appendChild(audio);
+
+    function mettreAJourDuree() {
+        if (Number.isFinite(audio.duration)) {
+            duree.textContent = formaterDureeVocal(audio.currentTime);
+        }
+    }
+
+    audio.addEventListener("loadedmetadata", function() {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            barre.max = String(audio.duration);
+            duree.textContent = formaterDureeVocal(audio.duration);
+        }
+    });
+
+    audio.addEventListener("timeupdate", function() {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            barre.value = String(audio.currentTime);
+        }
+        mettreAJourDuree();
+    });
+
+    audio.addEventListener("play", function() {
+        bouton.textContent = "❚❚";
+        bouton.setAttribute("aria-label", "Mettre le vocal en pause");
+    });
+
+    audio.addEventListener("pause", function() {
+        bouton.textContent = "▶";
+        bouton.setAttribute("aria-label", "Lire le vocal");
+    });
+
+    audio.addEventListener("ended", function() {
+        bouton.textContent = "▶";
+        bouton.setAttribute("aria-label", "Relire le vocal");
+        barre.value = "0";
+        duree.textContent = formaterDureeVocal(audio.duration);
+    });
+
+    audio.addEventListener("error", function() {
+        bouton.disabled = true;
+        bouton.textContent = "⚠";
+        duree.textContent = "Erreur";
+    });
+
+    bouton.addEventListener("click", async function() {
+        try {
+            if (audio.paused) {
+                await audio.play();
+            } else {
+                audio.pause();
+            }
+        } catch (error) {
+            console.error("Lecture du vocal impossible :", error);
+            duree.textContent = "Erreur";
+        }
+    });
+
+    barre.addEventListener("input", function() {
+        if (Number.isFinite(audio.duration)) {
+            audio.currentTime = Number(barre.value);
+        }
+    });
+
+    return lecteur;
+}
+
+
 function afficherMessage(message) {
 
     const bloc = document.createElement("div");
@@ -2821,12 +3047,9 @@ function afficherMessage(message) {
         });
         bloc.appendChild(image);
     } else if (message.type_message === "vocal" && message.audio_url) {
-        const audio = document.createElement("audio");
-        audio.className = "audio-prive";
-        audio.controls = true;
-        audio.preload = "metadata";
-        audio.src = message.audio_url;
-        bloc.appendChild(audio);
+        bloc.appendChild(
+            creerLecteurVocal(message.audio_url)
+        );
     } else if (message.contenu) {
         const texte = document.createElement("div");
         texte.className = "texte";
@@ -3892,23 +4115,10 @@ function afficherMessagePrive(
         message.audio_url
     ) {
 
-        const audio =
-            document.createElement("audio");
-
-        audio.className =
-            "audio-prive";
-
-        audio.controls =
-            true;
-
-        audio.preload =
-            "metadata";
-
-        audio.src =
-            message.audio_url;
-
         bulle.appendChild(
-            audio
+            creerLecteurVocal(
+                message.audio_url
+            )
         );
 
     } else {
