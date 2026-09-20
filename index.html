@@ -3740,7 +3740,6 @@ async function afficherJeux() {
             <div class="carte-jeu"><h3>❌⭕ Morpion</h3><p>Joue en ligne avec un pote.</p><button class="btn-jeu" id="btnJeuMorpion">Choisir un pote</button></div>
             <div class="carte-jeu"><h3>✊📄✂️ Pierre-feuille-ciseaux</h3><p>Choisis ton coup et affronte ton pote.</p><button class="btn-jeu" id="btnJeuPfc">Choisir un pote</button></div>
             <div class="carte-jeu"><h3>🔴🟡 Puissance 4</h3><p>Aligne 4 jetons avant ton adversaire.</p><button class="btn-jeu" id="btnJeuPuissance4">Choisir un pote</button></div>
-            <div class="carte-jeu"><h3>🧠 Mémoire</h3><p>Retrouvez les paires ensemble, chacun son tour.</p><button class="btn-jeu" id="btnJeuMemoire">Choisir un pote</button></div>
             <div class="carte-jeu"><h3>🔢 Devine le nombre</h3><p>Un joueur choisit un nombre, l'autre doit le trouver.</p><button class="btn-jeu" id="btnJeuNombre">Choisir un pote</button></div>
         </div>
         <div id="listeInvitationsJeu" class="liste-invitations-jeu"></div>
@@ -3749,7 +3748,6 @@ async function afficherJeux() {
     document.getElementById("btnJeuMorpion").addEventListener("click", afficherChoixAdversaireMorpion);
     document.getElementById("btnJeuPfc").addEventListener("click", function(){ afficherChoixAdversaireJeu("pfc"); });
     document.getElementById("btnJeuPuissance4").addEventListener("click", function(){ afficherChoixAdversaireJeu("puissance4"); });
-    document.getElementById("btnJeuMemoire").addEventListener("click", function(){ afficherChoixAdversaireJeu("memoire"); });
     document.getElementById("btnJeuNombre").addEventListener("click", function(){ afficherChoixAdversaireJeu("nombre"); });
 
     await chargerInvitationsJeuxSupplementaires();
@@ -4030,20 +4028,27 @@ function afficherPartieMorpion(partie) {
     }
 
     if (partie.statut === "terminee") {
-        const actions = document.getElementById("actionsMorpion");
-        const rejouer = document.createElement("button");
-        rejouer.className = "btn-rejouer-jeu";
-        rejouer.textContent = "🔄 Rejouer avec le même pote";
-        rejouer.addEventListener("click", async function() {
-            const adversaireId = String(partie.joueur_x) === String(utilisateur.id) ? partie.joueur_o : partie.joueur_x;
-            const { data: profil } = await client.from("profils").select("id,pseudo").eq("id", adversaireId).maybeSingle();
-            if (profil) await inviterAuMorpion(profil);
-        });
-        actions.appendChild(rejouer);
+        const actions = document.querySelector(".boutons-jeu");
+        if (actions && !document.getElementById("btnRejouerMorpionPote")) {
+            const rejouer = document.createElement("button");
+            rejouer.id = "btnRejouerMorpionPote";
+            rejouer.className = "btn-rejouer-jeu";
+            rejouer.type = "button";
+            rejouer.textContent = "🔄 Rejouer avec le même pote";
+            rejouer.addEventListener("click", async function() {
+                const adversaireId = String(partie.joueur_x) === String(utilisateur.id) ? partie.joueur_o : partie.joueur_x;
+                const { data: profil, error } = await client.from("profils").select("id,pseudo").eq("id", adversaireId).maybeSingle();
+                if (error) { console.error("Erreur profil adversaire :", error); return; }
+                if (profil) await inviterAuMorpion(profil);
+            });
+            actions.appendChild(rejouer);
+        }
     }
 
-    document.getElementById("btnQuitterMorpion")
-        .addEventListener("click", quitterMorpion);
+    const btnQuitter = document.getElementById("btnQuitterMorpion");
+    if (btnQuitter) {
+        btnQuitter.onclick = quitterMorpion;
+    }
 }
 
 
@@ -4264,26 +4269,34 @@ function afficherMemoire() {
 
 async function quitterMorpion() {
     const partie = partieMorpionActuelle;
-    if (!partie) {
-        afficherJeux();
-        return;
-    }
 
-    if (partie.statut === "invitation") {
-        await client.from("parties_morpion")
-            .update({ statut: "refusee" })
-            .eq("id", partie.id);
-    } else if (partie.statut === "en_cours") {
-        await client.from("parties_morpion")
-            .update({ statut: "terminee", gagnant: symboleMorpion === "X" ? partie.joueur_o : partie.joueur_x })
-            .eq("id", partie.id);
-    }
-
+    // On quitte immédiatement l'écran de la partie.
     partieMorpionActuelle = null;
     symboleMorpion = null;
+
+    if (partie && partie.id) {
+        try {
+            if (partie.statut === "invitation") {
+                await client.from("parties_morpion")
+                    .update({ statut: "refusee" })
+                    .eq("id", partie.id);
+            } else if (partie.statut === "en_cours") {
+                const gagnant = String(partie.joueur_x) === String(utilisateur.id)
+                    ? partie.joueur_o
+                    : partie.joueur_x;
+
+                await client.from("parties_morpion")
+                    .update({ statut: "terminee", gagnant: gagnant })
+                    .eq("id", partie.id)
+                    .eq("statut", "en_cours");
+            }
+        } catch (error) {
+            console.error("Erreur en quittant le Morpion :", error);
+        }
+    }
+
     await afficherJeux();
 }
-
 
 async function initialiserEcouteMorpion() {
 
