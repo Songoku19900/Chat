@@ -1836,6 +1836,13 @@ header {
   .case-memoire{width:60px;height:60px}
 }
 
+
+/* SOCIAL */
+.menu-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--rouge);color:#fff;font-size:11px;font-weight:bold}
+.carte-profil,.profil-formulaire,.bloc-amis{padding:18px;margin-bottom:18px;background:#fff;border:1px solid var(--bordure);border-radius:16px;box-shadow:var(--ombre)}
+.carte-profil{display:flex;align-items:center;gap:16px}.grand-avatar{width:82px;height:82px;min-width:82px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);color:#fff;font-size:30px;font-weight:bold}.grand-avatar img,.avatar-mini img{width:100%;height:100%;object-fit:cover}.profil-actions,.actions-ami{display:flex;gap:8px;flex-wrap:wrap}.profil-actions button,.actions-ami button{min-height:40px;padding:8px 12px;border-radius:10px;font-weight:bold}.btn-profil-save,.btn-ami-bleu{background:var(--primaire);color:#fff}.btn-profil-secondaire{background:var(--primaire-clair);color:var(--primaire)}.btn-ami-vert{background:var(--vert);color:#fff}.btn-ami-rouge{background:var(--rouge-clair);color:var(--rouge)}.carte-ami,.carte-demande{display:flex;align-items:center;gap:12px;padding:12px;margin-top:9px;border:1px solid var(--bordure);border-radius:12px;background:#fff}.infos-ami{flex:1;min-width:0}.avatar-mini{width:44px;height:44px;min-width:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);font-weight:bold}.zone-demandes-vide{padding:8px 0;color:var(--texte-secondaire)}.actions-message{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.btn-reaction{min-width:30px;min-height:30px;padding:3px 7px;border-radius:999px;background:#f8fafc;border:1px solid var(--bordure);font-size:15px}.btn-reaction.actif{background:var(--primaire-clair);border-color:#a5b4fc}.compteur-reaction{font-size:12px;font-weight:bold;color:var(--texte-secondaire)}.btn-supprimer-message{margin-left:auto;min-height:30px;padding:4px 8px;border-radius:8px;background:var(--rouge-clair);color:var(--rouge);font-size:11px;font-weight:bold}.indicateur-ecrit{min-height:22px;padding:2px 14px 5px;color:var(--texte-secondaire);font-size:12px;font-style:italic}.color-picker{width:58px;height:42px;border:1px solid var(--bordure);border-radius:10px;background:#fff}
+@media(max-width:600px){.carte-profil{align-items:flex-start;flex-direction:column}.actions-ami{width:100%}.actions-ami button{flex:1}}
+
 </style>
 
 </head>
@@ -2292,6 +2299,8 @@ const btnAmis =
 const btnJeux =
     document.getElementById("btnJeux");
 
+let btnProfil=null,badgeDemandesAmis=null,canalAmis=null,canalReactions=null,canalTyping=null,typingTimeout=null;
+
 
 /* =========================================================
    MESSAGES D'INFORMATION
@@ -2616,8 +2625,7 @@ async function ouvrirApplication(profil) {
     await initialiserEcouteAppels();
 
     await initialiserEcouteMorpion();
-
-
+    initialiserFonctionsSociales();
     afficherAccueil();
 
 }
@@ -3462,6 +3470,7 @@ function afficherMessage(message) {
         date.textContent = new Date(message.date_envoi).toLocaleString("fr-FR");
     }
     bloc.appendChild(date);
+    ajouterActionsMessage(bloc,message,"public");
     listeMessages.appendChild(bloc);
 }
 
@@ -3702,7 +3711,7 @@ async function afficherDiscussion() {
 
 btnAmis.addEventListener(
     "click",
-    afficherPotes
+    afficherAmisComplet
 );
 
 
@@ -4887,7 +4896,7 @@ async function ouvrirDiscussionPrivee(
 
     descriptionPage.textContent =
         "Conversation privée";
-
+    arreterEcouteTyping();
 
     listeMessages.innerHTML = `
 
@@ -4936,7 +4945,7 @@ async function ouvrirDiscussionPrivee(
     ecouterMessagesPrives(
         conversation.id
     );
-
+    initialiserEcouteTyping(conversation.id);
 
     allerEnBas();
 
@@ -5486,14 +5495,9 @@ function afficherMessagePrive(
     );
 
 
-    bloc.appendChild(
-        bulle
-    );
-
-
-    listeMessages.appendChild(
-        bloc
-    );
+    ajouterActionsMessage(bulle,message,"prive");
+    bloc.appendChild(bulle);
+    listeMessages.appendChild(bloc);
 
 }
 
@@ -5502,6 +5506,7 @@ btnVocal.addEventListener(
     "click",
     demarrerOuArreterVocal
 );
+inputMessage.addEventListener("input",signalerFrappe);
 
 
 /* =========================================================
@@ -7568,6 +7573,7 @@ function ecouterMessagesPrives(
 
 function fermerConversationPrivee() {
 
+    arreterEcouteTyping();
     conversationActuelle =
         null;
 
@@ -7610,6 +7616,7 @@ function changerBoutonActif(
     btnAmis.classList.remove(
         "actif"
     );
+    if(btnProfil) btnProfil.classList.remove("actif");
 
 
     if (bouton) {
@@ -7634,6 +7641,30 @@ function allerEnBas() {
 
 }
 
+
+/* =========================================================
+   PROFIL / AMIS / REACTIONS / SUPPRESSION / ECRITURE
+========================================================= */
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+function avatarMini(p,big=false){let c=p.couleur||"#4f46e5";return p.photo_url?`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c}"><img src="${esc(p.photo_url)}"></div>`:`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c};color:#fff">${esc((p.pseudo||"?")[0].toUpperCase())}</div>`;}
+function initialiserFonctionsSociales(){if(!utilisateur)return;if(!btnProfil){btnProfil=document.createElement("button");btnProfil.id="btnProfil";btnProfil.innerHTML="<span>⚙️</span><span>Profil</span>";btnProfil.onclick=afficherProfil;btnAmis.parentNode.insertBefore(btnProfil,btnJeux);}if(!badgeDemandesAmis){badgeDemandesAmis=document.createElement("span");badgeDemandesAmis.className="menu-badge";badgeDemandesAmis.style.display="none";btnAmis.appendChild(badgeDemandesAmis);}chargerBadgeDemandesAmis();initialiserCanalAmis();initialiserCanalReactions();}
+function afficherProfil(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnProfil);titrePage.textContent="⚙️ Mon profil";descriptionPage.textContent="Personnalise ton profil.";let c=utilisateur.couleur||"#4f46e5",photo=utilisateur.photo_url||"";listeMessages.innerHTML=`<div class="carte-profil">${avatarMini(utilisateur,true)}<div><h3 style="margin:0 0 5px">@${esc(utilisateur.pseudo)}</h3><div style="color:var(--texte-secondaire)">Ton compte Chat</div></div></div><div class="profil-formulaire"><h3>🎨 Apparence</h3><label>Couleur du profil</label><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><input id="profilCouleur" class="color-picker" type="color" value="${esc(c)}"><span id="profilCouleurTexte">${esc(c)}</span></div><label style="display:block;margin-top:16px">Photo de profil</label><input id="profilPhoto" class="champ" type="file" accept="image/*"><input id="profilPhotoUrl" class="champ" type="url" placeholder="Ou colle une URL d'image" value="${esc(photo)}"><div class="profil-actions" style="margin-top:15px"><button class="btn-profil-save" id="saveProfil">💾 Enregistrer</button><button class="btn-profil-secondaire" id="removePhoto">🗑️ Retirer</button></div><p id="profilMsg"></p></div>`;document.getElementById("profilCouleur").oninput=e=>document.getElementById("profilCouleurTexte").textContent=e.target.value;document.getElementById("saveProfil").onclick=sauverProfil;document.getElementById("removePhoto").onclick=async()=>{document.getElementById("profilPhotoUrl").value="";await sauverProfil(true);};}
+async function sauverProfil(){let msg=document.getElementById("profilMsg");if(!msg)return;try{let couleur=document.getElementById("profilCouleur").value,photo=document.getElementById("profilPhotoUrl").value.trim(),f=document.getElementById("profilPhoto").files?.[0];if(f){if(f.size>5*1024*1024)throw Error("La photo doit faire moins de 5 Mo.");let path=utilisateur.id+"/profil-"+Date.now()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");let u=await client.storage.from("images").upload(path,f,{contentType:f.type,upsert:true});if(u.error)throw u.error;photo=client.storage.from("images").getPublicUrl(path).data.publicUrl;}let r=await client.from("profils").update({couleur,photo_url:photo||null}).eq("id",utilisateur.id).select("*").single();if(r.error)throw r.error;utilisateur=r.data;pseudoActuel=utilisateur.pseudo;monPseudo.textContent="@"+pseudoActuel;localStorage.setItem("compte_chat",JSON.stringify({id:utilisateur.id,pseudo:utilisateur.pseudo}));msg.textContent="✅ Profil enregistré";}catch(e){msg.textContent="❌ "+e.message;}}
+async function etatAmis(){if(!utilisateur)return {amis:[],recues:[],envoyees:[]};let r=await client.from("demandes_amis").select("*").or(`demandeur_id.eq.${utilisateur.id},receveur_id.eq.${utilisateur.id}`);if(r.error){console.error(r.error);return {amis:[],recues:[],envoyees:[]};}let d=r.data||[],amis=d.filter(x=>x.statut==="acceptee").map(x=>String(x.demandeur_id)===String(utilisateur.id)?x.receveur_id:x.demandeur_id),recues=d.filter(x=>x.statut==="en_attente"&&String(x.receveur_id)===String(utilisateur.id)),envoyees=d.filter(x=>x.statut==="en_attente"&&String(x.demandeur_id)===String(utilisateur.id));return {amis:[...new Set(amis.map(String))],recues,envoyees};}
+async function profils(ids){if(!ids.length)return[];let r=await client.from("profils").select("id,pseudo,photo_url,couleur").in("id",ids);return r.data||[];}
+async function afficherAmisComplet(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnAmis);titrePage.textContent="👥 Mes potes";descriptionPage.textContent="Gère tes demandes et tes conversations.";listeMessages.innerHTML='<div class="message-vide">Chargement...</div>';let e=await etatAmis(),pa=await profils(e.amis),pd=await profils(e.recues.map(x=>x.demandeur_id)),all=(await client.from("profils").select("id,pseudo,photo_url,couleur").neq("id",utilisateur.id).order("pseudo")).data||[];let sent=new Set(e.envoyees.map(x=>String(x.receveur_id))),friends=new Set(e.amis);listeMessages.innerHTML=`<div class="bloc-amis"><h3>🔎 Ajouter un pote</h3><input id="findAmi" class="champ" style="margin-top:0" placeholder="Rechercher un pseudo..."><div id="resultAmi"></div></div><div class="bloc-amis"><h3>❤️ Mes potes (${pa.length})</h3><div id="mesAmis"></div></div><div class="bloc-amis"><h3>📩 Demandes reçues (${pd.length})</h3><div id="demandesRecues"></div></div>`;let ma=document.getElementById("mesAmis");if(!pa.length)ma.innerHTML='<div class="zone-demandes-vide">Tu n’as pas encore de pote.</div>';pa.forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Ton pote</div></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";b.textContent="💬 Parler";b.onclick=()=>ouvrirDiscussionPrivee(p);d.appendChild(b);ma.appendChild(d);});let dr=document.getElementById("demandesRecues");if(!pd.length)dr.innerHTML='<div class="zone-demandes-vide">Aucune demande.</div>';pd.forEach(p=>{let x=e.recues.find(q=>String(q.demandeur_id)===String(p.id)),d=document.createElement("div");d.className="carte-demande";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Demande de pote</div></div>`;let ok=document.createElement("button");ok.className="btn-ami-vert";ok.textContent="✓ Accepter";ok.onclick=()=>traiterDemande(x,true);let no=document.createElement("button");no.className="btn-ami-rouge";no.textContent="✕ Refuser";no.onclick=()=>traiterDemande(x,false);let a=document.createElement("div");a.className="actions-ami";a.append(ok,no);d.appendChild(a);dr.appendChild(d);});let find=document.getElementById("findAmi"),render=()=>{let q=find.value.toLowerCase(),box=document.getElementById("resultAmi");box.innerHTML="";all.filter(p=>p.pseudo.toLowerCase().includes(q)).slice(0,20).forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";if(friends.has(String(p.id))){b.textContent="✓ Pote";b.disabled=true;}else if(sent.has(String(p.id))){b.textContent="⏳ En attente";b.disabled=true;}else{b.textContent="➕ Ajouter";b.onclick=()=>envoyerDemande(p.id);}d.appendChild(b);box.appendChild(d);});};find.oninput=render;render();}
+async function envoyerDemande(id){let e=await etatAmis();if(e.amis.includes(String(id))||e.envoyees.some(x=>String(x.receveur_id)===String(id)))return;if(e.recues.some(x=>String(x.demandeur_id)===String(id))){return traiterDemande(e.recues.find(x=>String(x.demandeur_id)===String(id)),true);}let r=await client.from("demandes_amis").insert({demandeur_id:utilisateur.id,receveur_id:id,statut:"en_attente"});if(r.error)alert(r.error.message);else{await chargerBadgeDemandesAmis();afficherAmisComplet();}}
+async function traiterDemande(d,ok){if(!d)return;let r=await client.from("demandes_amis").update({statut:ok?"acceptee":"refusee"}).eq("id",d.id).eq("receveur_id",utilisateur.id);if(r.error)alert(r.error.message);else{await chargerBadgeDemandesAmis();afficherAmisComplet();}}
+async function chargerBadgeDemandesAmis(){if(!badgeDemandesAmis||!utilisateur)return;let r=await client.from("demandes_amis").select("id",{count:"exact",head:true}).eq("receveur_id",utilisateur.id).eq("statut","en_attente");if(r.error){badgeDemandesAmis.style.display="none";return;}badgeDemandesAmis.textContent=r.count||0;badgeDemandesAmis.style.display=r.count?"inline-flex":"none";}
+function initialiserCanalAmis(){if(canalAmis||!utilisateur)return;canalAmis=client.channel("amis-"+utilisateur.id).on("postgres_changes",{event:"*",schema:"public",table:"demandes_amis"},async p=>{let d=p.new||p.old;if(!d)return;if(String(d.demandeur_id)!==String(utilisateur.id)&&String(d.receveur_id)!==String(utilisateur.id))return;await chargerBadgeDemandesAmis();if(titrePage.textContent.includes("Mes potes"))afficherAmisComplet();}).subscribe();}
+function initialiserCanalReactions(){if(canalReactions||!utilisateur)return;canalReactions=client.channel("reactions-globales").on("postgres_changes",{event:"*",schema:"public",table:"reactions_messages"},p=>{let id=p.new?.message_id||p.old?.message_id;if(!id)return;let el=document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`);if(el)chargerReactions(id,el);}).subscribe();}
+async function chargerReactions(id,bloc){let z=bloc.querySelector(".zone-reactions");if(!z)return;let r=await client.from("reactions_messages").select("reaction,utilisateur_id").eq("message_id",id);if(r.error)return;let g={};(r.data||[]).forEach(x=>(g[x.reaction]??=[]).push(x.utilisateur_id));z.querySelectorAll(".btn-reaction").forEach(b=>{let a=g[b.dataset.reaction]||[];b.classList.toggle("actif",a.some(x=>String(x)===String(utilisateur.id)));b.querySelector(".compteur-reaction").textContent=a.length||"";});}
+function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id)){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent="🗑️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type);z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
+async function basculerReaction(id,type,r,bloc){let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();let e=q.data?(await client.from("reactions_messages").delete().eq("id",q.data.id)).error:(await client.from("reactions_messages").insert({message_id:id,type_message:type,utilisateur_id:utilisateur.id,reaction:r})).error;if(e)alert(e.message);else chargerReactions(id,bloc);}
+async function supprimerMessage(id,type){if(!confirm("Supprimer ce message ?"))return;let table=type==="public"?"messages":"messages_prives",col=type==="public"?"utilisateur_id":"auteur_id";let r=await client.from(table).delete().eq("id",id).eq(col,utilisateur.id);if(r.error){alert("Impossible de supprimer : "+r.error.message);return;}await client.from("reactions_messages").delete().eq("message_id",id);if(type==="public")chargerMessages();else if(conversationActuelle)chargerMessagesPrives(conversationActuelle.id);}
+function initialiserEcouteTyping(id){arreterEcouteTyping();canalTyping=client.channel("typing-"+id);canalTyping.on("broadcast",{event:"typing"},p=>{if(String(p.payload?.userId)===String(utilisateur.id))return;let e=document.getElementById("indicateurTyping");if(p.payload?.typing){if(!e){e=document.createElement("div");e.id="indicateurTyping";e.className="indicateur-ecrit";listeMessages.appendChild(e);}e.textContent="@"+(p.payload.pseudo||"Ton pote")+" écrit…";listeMessages.appendChild(e);}else if(e)e.remove();}).subscribe();}
+function arreterEcouteTyping(){if(canalTyping){client.removeChannel(canalTyping);canalTyping=null;}let e=document.getElementById("indicateurTyping");if(e)e.remove();}
+async function signalerFrappe(){if(!conversationActuelle||!canalTyping)return;await canalTyping.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:true}});clearTimeout(typingTimeout);typingTimeout=setTimeout(()=>canalTyping?.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:false}}),900);}
 
 /* =========================================================
    DECONNEXION
