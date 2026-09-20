@@ -2163,7 +2163,7 @@ function demarrerSurveillanceMorpion(partieId) {
             symboleMorpion = "O";
         }
 
-        if (titrePage.textContent.includes("Morpion")) {
+        if ((partieMorpionActuelle && String(partieMorpionActuelle.id) === String(partieId)) || titrePage.textContent.includes("Morpion")) {
             afficherPartieMorpion(data);
         }
 
@@ -4335,7 +4335,7 @@ async function initialiserEcouteMorpion() {
                 arreterSurveillanceMorpion();
             }
 
-            if (titrePage.textContent.includes("Morpion")) {
+            if ((partieMorpionActuelle && String(partieMorpionActuelle.id) === String(partie.id)) || titrePage.textContent.includes("Morpion")) {
                 afficherPartieMorpion(partie);
             }
         })
@@ -4545,8 +4545,50 @@ function afficherMemoire(partie){
 }
 
 async function jouerMemoire(partie,index){
-    const e=JSON.parse(JSON.stringify(partie.etat)); if(e.revelees.includes(index)||e.trouvees.includes(index))return; e.revelees.push(index);
-    if(e.revelees.length<2){await majEtatJeu(partie,e,{tour:utilisateur.id});setTimeout(async()=>{const actuel=partieJeuActuelle;if(!actuel||actuel.id!==partie.id)return;const ee=JSON.parse(JSON.stringify(actuel.etat));if(ee.revelees.length===2){const [a,b]=ee.revelees;if(ee.cartes[a]===ee.cartes[b])ee.trouvees.push(a,b);ee.revelees=[];const fini=ee.trouvees.length===ee.cartes.length;await majEtatJeu(actuel,ee,{tour:fini?null:autreJoueurJeu(actuel),statut:fini?"terminee":"en_cours",gagnant:fini?utilisateur.id:null});}},900);}
+    if(!utilisateur || !partie || partie.statut!=="en_cours") return;
+    if(String(partie.tour)!==String(utilisateur.id)) return;
+
+    const e=JSON.parse(JSON.stringify(partie.etat || initialiserEtatJeu("memoire")));
+    if(!Array.isArray(e.revelees)) e.revelees=[];
+    if(!Array.isArray(e.trouvees)) e.trouvees=[];
+    if(e.revelees.length>=2 || e.revelees.includes(index) || e.trouvees.includes(index)) return;
+
+    e.revelees.push(index);
+
+    // Première carte : on garde le tour du même joueur pour lui permettre
+    // de choisir immédiatement la deuxième carte.
+    if(e.revelees.length===1){
+        const resultat=await majEtatJeu(partie,e,{tour:utilisateur.id});
+        if(!resultat) return;
+
+        setTimeout(async function(){
+            const actuel=partieJeuActuelle;
+            if(!actuel || String(actuel.id)!==String(partie.id) || actuel.statut!=="en_cours") return;
+
+            const ee=JSON.parse(JSON.stringify(actuel.etat || {}));
+            if(!Array.isArray(ee.revelees) || ee.revelees.length!==2) return;
+
+            const a=ee.revelees[0];
+            const b=ee.revelees[1];
+            const memePaire=ee.cartes[a]===ee.cartes[b];
+
+            if(memePaire){
+                ee.trouvees=[...(ee.trouvees||[]),a,b];
+            }
+            ee.revelees=[];
+
+            const fini=ee.trouvees.length===ee.cartes.length;
+            await majEtatJeu(actuel,ee,{
+                tour:fini?null:(memePaire?utilisateur.id:autreJoueurJeu(actuel)),
+                statut:fini?"terminee":"en_cours",
+                gagnant:fini?utilisateur.id:null
+            });
+        },1200);
+        return;
+    }
+
+    // Deuxième carte : on l'enregistre sans changer de joueur.
+    await majEtatJeu(partie,e,{tour:utilisateur.id});
 }
 
 function afficherNombre(partie){
