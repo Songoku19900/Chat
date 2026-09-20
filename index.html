@@ -7681,51 +7681,70 @@ function avatarMini(p,big=false){let c=p.couleur||"#4f46e5";return p.photo_url?`
 function initialiserFonctionsSociales(){if(!utilisateur)return;if(!btnProfil){btnProfil=document.createElement("button");btnProfil.id="btnProfil";btnProfil.innerHTML="<span>⚙️</span><span>Profil</span>";btnProfil.onclick=afficherProfil;btnAmis.parentNode.insertBefore(btnProfil,btnJeux);}if(!badgeDemandesAmis){badgeDemandesAmis=document.createElement("span");badgeDemandesAmis.className="menu-badge";badgeDemandesAmis.style.display="none";btnAmis.appendChild(badgeDemandesAmis);}chargerBadgeDemandesAmis();initialiserCanalAmis();initialiserCanalReactions();}
 function afficherProfil(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnProfil);titrePage.textContent="⚙️ Mon profil";descriptionPage.textContent="Personnalise ton profil.";let c=utilisateur.couleur||"#4f46e5",photo=utilisateur.photo_url||"";listeMessages.innerHTML=`<div class="carte-profil">${avatarMini(utilisateur,true)}<div><h3 style="margin:0 0 5px">@${esc(utilisateur.pseudo)}</h3><div style="color:var(--texte-secondaire)">Ton compte Chat</div></div></div><div class="profil-formulaire"><h3>🎨 Apparence</h3><label>Couleur du profil</label><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><input id="profilCouleur" class="color-picker" type="color" value="${esc(c)}"><span id="profilCouleurTexte">${esc(c)}</span></div><label style="display:block;margin-top:16px">Photo de profil</label><input id="profilPhoto" class="champ" type="file" accept="image/*"><input id="profilPhotoUrl" class="champ" type="url" placeholder="Ou colle une URL d'image" value="${esc(photo)}"><div class="profil-actions" style="margin-top:15px"><button class="btn-profil-save" id="saveProfil">💾 Enregistrer</button><button class="btn-profil-secondaire" id="removePhoto">🗑️ Retirer</button></div><p id="profilMsg"></p></div>`;document.getElementById("profilCouleur").oninput=e=>document.getElementById("profilCouleurTexte").textContent=e.target.value;document.getElementById("saveProfil").onclick=sauverProfil;document.getElementById("removePhoto").onclick=async()=>{document.getElementById("profilPhotoUrl").value="";await sauverProfil(true);};}
 async function sauverProfil(){
-    const msg=document.getElementById("profilMsg");
-    if(!msg || !utilisateur) return;
-    try{
-        const couleur=document.getElementById("profilCouleur").value;
-        let photo=document.getElementById("profilPhotoUrl").value.trim();
-        const f=document.getElementById("profilPhoto").files?.[0];
+    const msg = document.getElementById("profilMsg");
+    if (!msg || !utilisateur) return;
 
-        if(f){
-            if(f.size>5*1024*1024) throw Error("La photo doit faire moins de 5 Mo.");
-            const ext=(f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
-            const path=utilisateur.id+"/profil-"+Date.now()+"."+(ext||"jpg");
-            const u=await client.storage.from("images").upload(path,f,{contentType:f.type,upsert:true});
-            if(u.error) throw u.error;
-            photo=client.storage.from("images").getPublicUrl(path).data.publicUrl;
+    try {
+        const couleur = document.getElementById("profilCouleur").value;
+        let photo = document.getElementById("profilPhotoUrl").value.trim();
+        const fichier = document.getElementById("profilPhoto").files?.[0];
+
+        if (fichier) {
+            if (fichier.size > 5 * 1024 * 1024) {
+                throw new Error("La photo doit faire moins de 5 Mo.");
+            }
+
+            const extension = (fichier.name.split(".").pop() || "jpg")
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "");
+
+            const chemin = utilisateur.id + "/profil-" + Date.now() + "." + (extension || "jpg");
+
+            const upload = await client.storage
+                .from("images")
+                .upload(chemin, fichier, {
+                    contentType: fichier.type,
+                    upsert: true
+                });
+
+            if (upload.error) throw upload.error;
+
+            photo = client.storage
+                .from("images")
+                .getPublicUrl(chemin).data.publicUrl;
         }
 
-        const {error:updateError}=await client
+        const { data: profilSauve, error: erreurSauvegarde } = await client
             .from("profils")
-            .update({couleur:couleur,photo_url:photo||null})
-            .eq("id",utilisateur.id);
-
-        if(updateError) throw updateError;
-
-        const {data:profilSauve,error:lectureError}=await client
-            .from("profils")
+            .update({
+                couleur: couleur,
+                photo_url: photo || null
+            })
+            .eq("id", utilisateur.id)
             .select("*")
-            .eq("id",utilisateur.id)
             .maybeSingle();
 
-        if(lectureError) throw lectureError;
-        if(!profilSauve) throw Error("Le profil n'a pas pu être relu après la sauvegarde.");
+        if (erreurSauvegarde) throw erreurSauvegarde;
 
-        utilisateur=profilSauve;
-        pseudoActuel=profilSauve.pseudo;
-        monPseudo.textContent="@"+pseudoActuel;
-        localStorage.setItem("compte_chat",JSON.stringify({
-            id:profilSauve.id,
-            pseudo:profilSauve.pseudo
+        if (!profilSauve) {
+            throw new Error("Le profil n'a pas été modifié. Vérifie les permissions RLS de la table profils.");
+        }
+
+        utilisateur = profilSauve;
+        pseudoActuel = profilSauve.pseudo;
+        monPseudo.textContent = "@" + pseudoActuel;
+
+        localStorage.setItem("compte_chat", JSON.stringify({
+            id: profilSauve.id,
+            pseudo: profilSauve.pseudo
         }));
 
-        msg.textContent="✅ Profil enregistré";
+        msg.textContent = "✅ Profil enregistré !";
         afficherProfil();
-    }catch(e){
+
+    } catch (e) {
         console.error(e);
-        msg.textContent="❌ "+(e.message||"Erreur inconnue");
+        msg.textContent = "❌ " + (e.message || "Erreur inconnue");
     }
 }
 async function etatAmis(){if(!utilisateur)return {amis:[],recues:[],envoyees:[]};let r=await client.from("demandes_amis").select("*").or(`demandeur_id.eq.${utilisateur.id},receveur_id.eq.${utilisateur.id}`);if(r.error){console.error(r.error);return {amis:[],recues:[],envoyees:[]};}let d=r.data||[],amis=d.filter(x=>x.statut==="acceptee").map(x=>String(x.demandeur_id)===String(utilisateur.id)?x.receveur_id:x.demandeur_id),recues=d.filter(x=>x.statut==="en_attente"&&String(x.receveur_id)===String(utilisateur.id)),envoyees=d.filter(x=>x.statut==="en_attente"&&String(x.demandeur_id)===String(utilisateur.id));return {amis:[...new Set(amis.map(String))],recues,envoyees};}
