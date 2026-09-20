@@ -1836,9 +1836,6 @@ header {
   .case-memoire{width:60px;height:60px}
 }
 
-
-/* SOCIAL */
-.menu-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--rouge);color:#fff;font-size:11px;font-weight:bold}
 .carte-profil,.profil-formulaire,.bloc-amis{padding:18px;margin-bottom:18px;background:#fff;border:1px solid var(--bordure);border-radius:16px;box-shadow:var(--ombre)}
 .carte-profil{display:flex;align-items:center;gap:16px}.grand-avatar{width:82px;height:82px;min-width:82px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);color:#fff;font-size:30px;font-weight:bold}.grand-avatar img,.avatar-mini img{width:100%;height:100%;object-fit:cover}.profil-actions,.actions-ami{display:flex;gap:8px;flex-wrap:wrap}.profil-actions button,.actions-ami button{min-height:40px;padding:8px 12px;border-radius:10px;font-weight:bold}.btn-profil-save,.btn-ami-bleu{background:var(--primaire);color:#fff}.btn-profil-secondaire{background:var(--primaire-clair);color:var(--primaire)}.btn-ami-vert{background:var(--vert);color:#fff}.btn-ami-rouge{background:var(--rouge-clair);color:var(--rouge)}.carte-ami,.carte-demande{display:flex;align-items:center;gap:12px;padding:12px;margin-top:9px;border:1px solid var(--bordure);border-radius:12px;background:#fff}.infos-ami{flex:1;min-width:0}.avatar-mini{width:44px;height:44px;min-width:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);font-weight:bold}.zone-demandes-vide{padding:8px 0;color:var(--texte-secondaire)}.actions-message{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.btn-reaction{min-width:30px;min-height:30px;padding:3px 7px;border-radius:999px;background:#f8fafc;border:1px solid var(--bordure);font-size:15px}.btn-reaction.actif{background:var(--primaire-clair);border-color:#a5b4fc}.compteur-reaction{font-size:12px;font-weight:bold;color:var(--texte-secondaire)}.btn-supprimer-message{margin-left:auto;min-height:30px;padding:4px 8px;border-radius:8px;background:var(--rouge-clair);color:var(--rouge);font-size:11px;font-weight:bold}.indicateur-ecrit{min-height:22px;padding:2px 14px 5px;color:var(--texte-secondaire);font-size:12px;font-style:italic}.color-picker{width:58px;height:42px;border:1px solid var(--bordure);border-radius:10px;background:#fff}
 @media(max-width:600px){.carte-profil{align-items:flex-start;flex-direction:column}.actions-ami{width:100%}.actions-ami button{flex:1}}
@@ -2121,6 +2118,13 @@ let conversationActuelle = null;
 
 let utilisateurPriveActuel = null;
 
+let btnProfil = null;
+let badgeDemandesAmis = null;
+let canalAmis = null;
+let canalReactions = null;
+let canalTyping = null;
+let typingTimeout = null;
+
 /* =========================================================
    JEUX EN LIGNE - MORPION
 ========================================================= */
@@ -2298,8 +2302,6 @@ const btnAmis =
 
 const btnJeux =
     document.getElementById("btnJeux");
-
-let btnProfil=null,badgeDemandesAmis=null,canalAmis=null,canalReactions=null,canalTyping=null,typingTimeout=null;
 
 
 /* =========================================================
@@ -2625,7 +2627,9 @@ async function ouvrirApplication(profil) {
     await initialiserEcouteAppels();
 
     await initialiserEcouteMorpion();
+
     initialiserFonctionsSociales();
+
     afficherAccueil();
 
 }
@@ -2846,7 +2850,7 @@ async function afficherUtilisateurs() {
         error
     } = await client
         .from("profils")
-        .select("id, pseudo")
+        .select("id, pseudo, photo_url, couleur")
         .order(
             "pseudo",
             {
@@ -3124,10 +3128,25 @@ function creerCarteUtilisateur(
         "avatar-utilisateur";
 
 
-    avatar.textContent =
-        profil.pseudo
-            .charAt(0)
-            .toUpperCase();
+    if (profil.photo_url) {
+        const image = document.createElement("img");
+        image.src = profil.photo_url;
+        image.alt = "Photo de profil de @" + profil.pseudo;
+        image.loading = "lazy";
+        image.style.width = "100%";
+        image.style.height = "100%";
+        image.style.objectFit = "cover";
+        image.style.borderRadius = "13px";
+        avatar.style.background = profil.couleur || "#4f46e5";
+        avatar.appendChild(image);
+    } else {
+        avatar.textContent =
+            profil.pseudo
+                .charAt(0)
+                .toUpperCase();
+        avatar.style.background = profil.couleur || "#eef2ff";
+        avatar.style.color = profil.couleur ? "white" : "var(--primaire)";
+    }
 
 
     const point =
@@ -3470,7 +3489,7 @@ function afficherMessage(message) {
         date.textContent = new Date(message.date_envoi).toLocaleString("fr-FR");
     }
     bloc.appendChild(date);
-    ajouterActionsMessage(bloc,message,"public");
+    ajouterActionsMessage(bloc, message, "public");
     listeMessages.appendChild(bloc);
 }
 
@@ -3483,6 +3502,14 @@ function afficherMessage(message) {
 btnEnvoyer.addEventListener(
     "click",
     envoyerMessage
+);
+
+
+inputMessage.addEventListener(
+    "input",
+    function() {
+        signalerFrappe();
+    }
 );
 
 
@@ -3711,7 +3738,7 @@ async function afficherDiscussion() {
 
 btnAmis.addEventListener(
     "click",
-    afficherAmisComplet
+    afficherPotes
 );
 
 
@@ -4432,7 +4459,7 @@ function autreJoueurJeu(partie) {
 
 async function afficherChoixAdversaireJeu(type) {
     typeJeuActuel = type;
-    const { data: profils, error } = await client.from("profils").select("id,pseudo").neq("id", utilisateur.id).order("pseudo", {ascending:true});
+    const { data: profils, error } = await client.from("profils").select("id,pseudo,photo_url,couleur").neq("id", utilisateur.id).order("pseudo", {ascending:true});
     if (error) { alert("Impossible de charger les potes : " + error.message); return; }
     const autres = profils || [];
     if (!autres.length) { alert("Il n'y a aucun autre compte à inviter pour le moment."); return; }
@@ -4488,7 +4515,7 @@ async function chargerInvitationsJeuxSupplementaires(){
     const zone=document.getElementById("listeInvitationsJeu"); if(!zone||!utilisateur)return;
     const {data,error}=await client.from("parties_jeux").select("*").eq("joueur_2",utilisateur.id).eq("statut","invitation").order("created_at",{ascending:false});
     if(error){console.error(error);return;} zone.innerHTML=""; if(!data||!data.length)return;
-    const ids=[...new Set(data.map(p=>p.joueur_1))]; const {data:profils}=await client.from("profils").select("id,pseudo").in("id",ids);
+    const ids=[...new Set(data.map(p=>p.joueur_1))]; const {data:profils}=await client.from("profils").select("id,pseudo,photo_url,couleur").in("id",ids);
     data.forEach(function(partie){
         const profil=(profils||[]).find(p=>String(p.id)===String(partie.joueur_1));
         const bloc=document.createElement("div"); bloc.className="invitation-jeu";
@@ -4709,7 +4736,7 @@ async function chargerPotes() {
         error
     } = await client
         .from("profils")
-        .select("id, pseudo")
+        .select("id, pseudo, photo_url, couleur")
         .order(
             "pseudo",
             {
@@ -4896,7 +4923,7 @@ async function ouvrirDiscussionPrivee(
 
     descriptionPage.textContent =
         "Conversation privée";
-    arreterEcouteTyping();
+
 
     listeMessages.innerHTML = `
 
@@ -4945,7 +4972,7 @@ async function ouvrirDiscussionPrivee(
     ecouterMessagesPrives(
         conversation.id
     );
-    initialiserEcouteTyping(conversation.id);
+
 
     allerEnBas();
 
@@ -5495,9 +5522,16 @@ function afficherMessagePrive(
     );
 
 
-    ajouterActionsMessage(bulle,message,"prive");
-    bloc.appendChild(bulle);
-    listeMessages.appendChild(bloc);
+    ajouterActionsMessage(bulle, message, "prive");
+
+    bloc.appendChild(
+        bulle
+    );
+
+
+    listeMessages.appendChild(
+        bloc
+    );
 
 }
 
@@ -5506,7 +5540,6 @@ btnVocal.addEventListener(
     "click",
     demarrerOuArreterVocal
 );
-inputMessage.addEventListener("input",signalerFrappe);
 
 
 /* =========================================================
@@ -7573,7 +7606,6 @@ function ecouterMessagesPrives(
 
 function fermerConversationPrivee() {
 
-    arreterEcouteTyping();
     conversationActuelle =
         null;
 
@@ -7616,7 +7648,6 @@ function changerBoutonActif(
     btnAmis.classList.remove(
         "actif"
     );
-    if(btnProfil) btnProfil.classList.remove("actif");
 
 
     if (bouton) {
@@ -7649,7 +7680,54 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function avatarMini(p,big=false){let c=p.couleur||"#4f46e5";return p.photo_url?`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c}"><img src="${esc(p.photo_url)}"></div>`:`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c};color:#fff">${esc((p.pseudo||"?")[0].toUpperCase())}</div>`;}
 function initialiserFonctionsSociales(){if(!utilisateur)return;if(!btnProfil){btnProfil=document.createElement("button");btnProfil.id="btnProfil";btnProfil.innerHTML="<span>⚙️</span><span>Profil</span>";btnProfil.onclick=afficherProfil;btnAmis.parentNode.insertBefore(btnProfil,btnJeux);}if(!badgeDemandesAmis){badgeDemandesAmis=document.createElement("span");badgeDemandesAmis.className="menu-badge";badgeDemandesAmis.style.display="none";btnAmis.appendChild(badgeDemandesAmis);}chargerBadgeDemandesAmis();initialiserCanalAmis();initialiserCanalReactions();}
 function afficherProfil(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnProfil);titrePage.textContent="⚙️ Mon profil";descriptionPage.textContent="Personnalise ton profil.";let c=utilisateur.couleur||"#4f46e5",photo=utilisateur.photo_url||"";listeMessages.innerHTML=`<div class="carte-profil">${avatarMini(utilisateur,true)}<div><h3 style="margin:0 0 5px">@${esc(utilisateur.pseudo)}</h3><div style="color:var(--texte-secondaire)">Ton compte Chat</div></div></div><div class="profil-formulaire"><h3>🎨 Apparence</h3><label>Couleur du profil</label><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><input id="profilCouleur" class="color-picker" type="color" value="${esc(c)}"><span id="profilCouleurTexte">${esc(c)}</span></div><label style="display:block;margin-top:16px">Photo de profil</label><input id="profilPhoto" class="champ" type="file" accept="image/*"><input id="profilPhotoUrl" class="champ" type="url" placeholder="Ou colle une URL d'image" value="${esc(photo)}"><div class="profil-actions" style="margin-top:15px"><button class="btn-profil-save" id="saveProfil">💾 Enregistrer</button><button class="btn-profil-secondaire" id="removePhoto">🗑️ Retirer</button></div><p id="profilMsg"></p></div>`;document.getElementById("profilCouleur").oninput=e=>document.getElementById("profilCouleurTexte").textContent=e.target.value;document.getElementById("saveProfil").onclick=sauverProfil;document.getElementById("removePhoto").onclick=async()=>{document.getElementById("profilPhotoUrl").value="";await sauverProfil(true);};}
-async function sauverProfil(){let msg=document.getElementById("profilMsg");if(!msg)return;try{let couleur=document.getElementById("profilCouleur").value,photo=document.getElementById("profilPhotoUrl").value.trim(),f=document.getElementById("profilPhoto").files?.[0];if(f){if(f.size>5*1024*1024)throw Error("La photo doit faire moins de 5 Mo.");let path=utilisateur.id+"/profil-"+Date.now()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");let u=await client.storage.from("images").upload(path,f,{contentType:f.type,upsert:true});if(u.error)throw u.error;photo=client.storage.from("images").getPublicUrl(path).data.publicUrl;}let r=await client.from("profils").update({couleur,photo_url:photo||null}).eq("id",utilisateur.id).select("*").maybeSingle();if(r.error)throw r.error;utilisateur={...utilisateur,...(r.data||{}),couleur,photo_url:photo||null};pseudoActuel=utilisateur.pseudo;monPseudo.textContent="@"+pseudoActuel;localStorage.setItem("compte_chat",JSON.stringify({id:utilisateur.id,pseudo:utilisateur.pseudo}));msg.textContent="✅ Profil enregistré";}catch(e){msg.textContent="❌ "+e.message;}}
+async function sauverProfil(){
+    const msg=document.getElementById("profilMsg");
+    if(!msg || !utilisateur) return;
+    try{
+        const couleur=document.getElementById("profilCouleur").value;
+        let photo=document.getElementById("profilPhotoUrl").value.trim();
+        const f=document.getElementById("profilPhoto").files?.[0];
+
+        if(f){
+            if(f.size>5*1024*1024) throw Error("La photo doit faire moins de 5 Mo.");
+            const ext=(f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
+            const path=utilisateur.id+"/profil-"+Date.now()+"."+(ext||"jpg");
+            const u=await client.storage.from("images").upload(path,f,{contentType:f.type,upsert:true});
+            if(u.error) throw u.error;
+            photo=client.storage.from("images").getPublicUrl(path).data.publicUrl;
+        }
+
+        const {error:updateError}=await client
+            .from("profils")
+            .update({couleur:couleur,photo_url:photo||null})
+            .eq("id",utilisateur.id);
+
+        if(updateError) throw updateError;
+
+        const {data:profilSauve,error:lectureError}=await client
+            .from("profils")
+            .select("*")
+            .eq("id",utilisateur.id)
+            .maybeSingle();
+
+        if(lectureError) throw lectureError;
+        if(!profilSauve) throw Error("Le profil n'a pas pu être relu après la sauvegarde.");
+
+        utilisateur=profilSauve;
+        pseudoActuel=profilSauve.pseudo;
+        monPseudo.textContent="@"+pseudoActuel;
+        localStorage.setItem("compte_chat",JSON.stringify({
+            id:profilSauve.id,
+            pseudo:profilSauve.pseudo
+        }));
+
+        msg.textContent="✅ Profil enregistré";
+        afficherProfil();
+    }catch(e){
+        console.error(e);
+        msg.textContent="❌ "+(e.message||"Erreur inconnue");
+    }
+}
 async function etatAmis(){if(!utilisateur)return {amis:[],recues:[],envoyees:[]};let r=await client.from("demandes_amis").select("*").or(`demandeur_id.eq.${utilisateur.id},receveur_id.eq.${utilisateur.id}`);if(r.error){console.error(r.error);return {amis:[],recues:[],envoyees:[]};}let d=r.data||[],amis=d.filter(x=>x.statut==="acceptee").map(x=>String(x.demandeur_id)===String(utilisateur.id)?x.receveur_id:x.demandeur_id),recues=d.filter(x=>x.statut==="en_attente"&&String(x.receveur_id)===String(utilisateur.id)),envoyees=d.filter(x=>x.statut==="en_attente"&&String(x.demandeur_id)===String(utilisateur.id));return {amis:[...new Set(amis.map(String))],recues,envoyees};}
 async function profils(ids){if(!ids.length)return[];let r=await client.from("profils").select("id,pseudo,photo_url,couleur").in("id",ids);return r.data||[];}
 async function afficherAmisComplet(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnAmis);titrePage.textContent="👥 Mes potes";descriptionPage.textContent="Gère tes demandes et tes conversations.";listeMessages.innerHTML='<div class="message-vide">Chargement...</div>';let e=await etatAmis(),pa=await profils(e.amis),pd=await profils(e.recues.map(x=>x.demandeur_id)),all=(await client.from("profils").select("id,pseudo,photo_url,couleur").neq("id",utilisateur.id).order("pseudo")).data||[];let sent=new Set(e.envoyees.map(x=>String(x.receveur_id))),friends=new Set(e.amis);listeMessages.innerHTML=`<div class="bloc-amis"><h3>🔎 Ajouter un pote</h3><input id="findAmi" class="champ" style="margin-top:0" placeholder="Rechercher un pseudo..."><div id="resultAmi"></div></div><div class="bloc-amis"><h3>❤️ Mes potes (${pa.length})</h3><div id="mesAmis"></div></div><div class="bloc-amis"><h3>📩 Demandes reçues (${pd.length})</h3><div id="demandesRecues"></div></div>`;let ma=document.getElementById("mesAmis");if(!pa.length)ma.innerHTML='<div class="zone-demandes-vide">Tu n’as pas encore de pote.</div>';pa.forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Ton pote</div></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";b.textContent="💬 Parler";b.onclick=()=>ouvrirDiscussionPrivee(p);d.appendChild(b);ma.appendChild(d);});let dr=document.getElementById("demandesRecues");if(!pd.length)dr.innerHTML='<div class="zone-demandes-vide">Aucune demande.</div>';pd.forEach(p=>{let x=e.recues.find(q=>String(q.demandeur_id)===String(p.id)),d=document.createElement("div");d.className="carte-demande";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Demande de pote</div></div>`;let ok=document.createElement("button");ok.className="btn-ami-vert";ok.textContent="✓ Accepter";ok.onclick=()=>traiterDemande(x,true);let no=document.createElement("button");no.className="btn-ami-rouge";no.textContent="✕ Refuser";no.onclick=()=>traiterDemande(x,false);let a=document.createElement("div");a.className="actions-ami";a.append(ok,no);d.appendChild(a);dr.appendChild(d);});let find=document.getElementById("findAmi"),render=()=>{let q=find.value.toLowerCase(),box=document.getElementById("resultAmi");box.innerHTML="";all.filter(p=>p.pseudo.toLowerCase().includes(q)).slice(0,20).forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";if(friends.has(String(p.id))){b.textContent="✓ Pote";b.disabled=true;}else if(sent.has(String(p.id))){b.textContent="⏳ En attente";b.disabled=true;}else{b.textContent="➕ Ajouter";b.onclick=()=>envoyerDemande(p.id);}d.appendChild(b);box.appendChild(d);});};find.oninput=render;render();}
@@ -7665,6 +7743,7 @@ async function supprimerMessage(id,type){if(!confirm("Supprimer ce message ?"))r
 function initialiserEcouteTyping(id){arreterEcouteTyping();canalTyping=client.channel("typing-"+id);canalTyping.on("broadcast",{event:"typing"},p=>{if(String(p.payload?.userId)===String(utilisateur.id))return;let e=document.getElementById("indicateurTyping");if(p.payload?.typing){if(!e){e=document.createElement("div");e.id="indicateurTyping";e.className="indicateur-ecrit";listeMessages.appendChild(e);}e.textContent="@"+(p.payload.pseudo||"Ton pote")+" écrit…";listeMessages.appendChild(e);}else if(e)e.remove();}).subscribe();}
 function arreterEcouteTyping(){if(canalTyping){client.removeChannel(canalTyping);canalTyping=null;}let e=document.getElementById("indicateurTyping");if(e)e.remove();}
 async function signalerFrappe(){if(!conversationActuelle||!canalTyping)return;await canalTyping.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:true}});clearTimeout(typingTimeout);typingTimeout=setTimeout(()=>canalTyping?.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:false}}),900);}
+
 
 /* =========================================================
    DECONNEXION
