@@ -1633,6 +1633,117 @@ header {
     cursor: pointer;
 }
 
+/* =========================================================
+   AUTRES JEUX + BOUTON REJOUER
+========================================================= */
+
+.zone-jeu-simple {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    width:100%;
+    max-width:620px;
+    margin:0 auto;
+    text-align:center;
+}
+
+.zone-jeu-simple h3 { margin:0; font-size:24px; }
+
+.resultat-jeu {
+    min-height:24px;
+    color:var(--texte-secondaire);
+    font-weight:bold;
+}
+
+.btn-rejouer-jeu {
+    min-height:44px;
+    padding:10px 18px;
+    border-radius:10px;
+    background:var(--vert);
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.btn-rejouer-jeu:hover { background:#16a34a; }
+
+.boutons-jeu {
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+
+.choix-jeu {
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+
+.choix-jeu button {
+    min-width:110px;
+    min-height:48px;
+    padding:10px 14px;
+    border-radius:11px;
+    background:var(--primaire-clair);
+    color:var(--primaire);
+    font-weight:bold;
+}
+
+.zone-nombre input {
+    width:min(260px,100%);
+    text-align:center;
+}
+
+.grille-puissance4 {
+    display:grid;
+    grid-template-columns:repeat(7, minmax(38px,58px));
+    gap:6px;
+    padding:10px;
+    background:#1e40af;
+    border-radius:14px;
+}
+
+.case-puissance4 {
+    width:100%;
+    aspect-ratio:1;
+    border-radius:50%;
+    background:white;
+    border:3px solid rgba(255,255,255,.35);
+    font-size:0;
+}
+
+.case-puissance4.joueur1 { background:#ef4444; }
+.case-puissance4.joueur2 { background:#facc15; }
+
+.grille-memoire {
+    display:grid;
+    grid-template-columns:repeat(4, minmax(55px,80px));
+    gap:8px;
+}
+
+.case-memoire {
+    width:100%;
+    aspect-ratio:1;
+    border-radius:12px;
+    background:var(--primaire);
+    color:white;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.case-memoire.revelee, .case-memoire.trouvee {
+    background:var(--primaire-clair);
+    color:var(--texte);
+}
+
+@media (max-width:750px) {
+    .grille-puissance4 { grid-template-columns:repeat(7, minmax(32px,10vw)); gap:4px; padding:7px; }
+    .grille-memoire { grid-template-columns:repeat(4, minmax(48px,18vw)); gap:6px; }
+}
+
 .fenetre-invitation-jeu {
     position: fixed;
     inset: 0;
@@ -1690,6 +1801,39 @@ header {
     .invitation-jeu-actions button {
         flex: 1;
     }
+}
+
+
+
+/* =========================================================
+   JEUX MULTIJOUEURS SUPPLEMENTAIRES
+========================================================= */
+
+.zone-jeu-en-ligne { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; }
+.zone-jeu-en-ligne h3 { margin:0; }
+.info-jeu-en-ligne { text-align:center; color:var(--texte-secondaire); min-height:24px; }
+.actions-jeu { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.btn-rejouer-jeu { min-height:44px; padding:10px 18px; border:0; border-radius:10px; background:var(--primaire); color:#fff; font-weight:bold; cursor:pointer; }
+.btn-retour-jeu { min-height:42px; padding:9px 14px; border:0; border-radius:10px; background:#e5e7eb; color:#111827; cursor:pointer; }
+.choix-jeu-titre { text-align:center; margin-bottom:10px; }
+.choix-jeu-sous-titre { text-align:center; color:var(--texte-secondaire); margin-bottom:16px; }
+.grille-pfc { display:grid; grid-template-columns:repeat(3,minmax(85px,1fr)); gap:10px; width:min(420px,100%); }
+.btn-pfc { min-height:90px; border:1px solid var(--bordure); border-radius:14px; background:var(--blanc); font-size:36px; cursor:pointer; }
+.btn-pfc:disabled { opacity:.5; cursor:default; }
+.grille-puissance4 { display:grid; grid-template-columns:repeat(7,42px); gap:5px; padding:8px; border-radius:12px; background:#2563eb; overflow:auto; max-width:100%; }
+.case-puissance4 { width:42px; height:42px; border-radius:50%; border:0; background:white; cursor:pointer; }
+.case-puissance4.jaune { background:#facc15; }
+.case-puissance4.rouge { background:#ef4444; }
+.zone-memoire { display:grid; grid-template-columns:repeat(4,70px); gap:8px; }
+.case-memoire { width:70px; height:70px; border:1px solid var(--bordure); border-radius:12px; background:var(--blanc); font-size:28px; cursor:pointer; }
+.case-memoire.revelee { background:#f3f4f6; }
+.zone-nombre { display:flex; flex-direction:column; gap:10px; width:min(340px,100%); }
+.zone-nombre input { min-height:44px; padding:8px 12px; border:1px solid var(--bordure); border-radius:10px; font-size:16px; }
+@media (max-width:600px){
+  .grille-puissance4{grid-template-columns:repeat(7,38px)}
+  .case-puissance4{width:38px;height:38px}
+  .zone-memoire{grid-template-columns:repeat(4,60px)}
+  .case-memoire{width:60px;height:60px}
 }
 
 </style>
@@ -1980,6 +2124,13 @@ let symboleMorpion = null;
 
 let surveillanceMorpion = null;
 
+/* Jeux supplémentaires */
+let canalJeuxSupplementaires = null;
+let partieJeuActuelle = null;
+let typeJeuActuel = null;
+let joueurJeuActuel = null;
+let intervalJeuSupplementaire = null;
+
 function arreterSurveillanceMorpion() {
     if (surveillanceMorpion) {
         clearInterval(surveillanceMorpion);
@@ -2012,7 +2163,7 @@ function demarrerSurveillanceMorpion(partieId) {
             symboleMorpion = "O";
         }
 
-        if (document.getElementById("grilleMorpion")) {
+        if (titrePage.textContent.includes("Morpion")) {
             afficherPartieMorpion(data);
         }
 
@@ -3568,35 +3719,41 @@ btnJeux.addEventListener(
 async function afficherJeux() {
 
     fermerConversationPrivee();
-
     changerBoutonActif(btnJeux);
 
     titrePage.textContent = "🎮 Jeux en ligne";
-    descriptionPage.textContent =
-        "Invite un pote et joue avec lui en temps réel.";
-
+    descriptionPage.textContent = "Choisis un jeu puis choisis avec quel pote tu veux jouer.";
     zoneEnvoi.style.display = "none";
 
-    if (partieMorpionActuelle) {
+    if (partieMorpionActuelle && partieMorpionActuelle.statut !== "terminee" && partieMorpionActuelle.statut !== "refusee") {
         afficherPartieMorpion(partieMorpionActuelle);
+        return;
+    }
+
+    if (partieJeuActuelle && partieJeuActuelle.statut === "en_cours") {
+        afficherPartieJeuSupplementaire(partieJeuActuelle);
         return;
     }
 
     listeMessages.innerHTML = `
         <div class="grille-jeux">
-            <div class="carte-jeu">
-                <h3>❌⭕ Morpion</h3>
-                <p>Affronte un pote en temps réel, chacun depuis son téléphone ou son ordinateur.</p>
-                <button class="btn-jeu" id="btnLancerMorpion">Choisir un pote</button>
-            </div>
+            <div class="carte-jeu"><h3>❌⭕ Morpion</h3><p>Joue en ligne avec un pote.</p><button class="btn-jeu" id="btnJeuMorpion">Choisir un pote</button></div>
+            <div class="carte-jeu"><h3>✊📄✂️ Pierre-feuille-ciseaux</h3><p>Choisis ton coup et affronte ton pote.</p><button class="btn-jeu" id="btnJeuPfc">Choisir un pote</button></div>
+            <div class="carte-jeu"><h3>🔴🟡 Puissance 4</h3><p>Aligne 4 jetons avant ton adversaire.</p><button class="btn-jeu" id="btnJeuPuissance4">Choisir un pote</button></div>
+            <div class="carte-jeu"><h3>🧠 Mémoire</h3><p>Retrouvez les paires ensemble, chacun son tour.</p><button class="btn-jeu" id="btnJeuMemoire">Choisir un pote</button></div>
+            <div class="carte-jeu"><h3>🔢 Devine le nombre</h3><p>Un joueur choisit un nombre, l'autre doit le trouver.</p><button class="btn-jeu" id="btnJeuNombre">Choisir un pote</button></div>
         </div>
         <div id="listeInvitationsJeu" class="liste-invitations-jeu"></div>
     `;
 
-    document.getElementById("btnLancerMorpion")
-        .addEventListener("click", afficherChoixAdversaireMorpion);
+    document.getElementById("btnJeuMorpion").addEventListener("click", afficherChoixAdversaireMorpion);
+    document.getElementById("btnJeuPfc").addEventListener("click", function(){ afficherChoixAdversaireJeu("pfc"); });
+    document.getElementById("btnJeuPuissance4").addEventListener("click", function(){ afficherChoixAdversaireJeu("puissance4"); });
+    document.getElementById("btnJeuMemoire").addEventListener("click", function(){ afficherChoixAdversaireJeu("memoire"); });
+    document.getElementById("btnJeuNombre").addEventListener("click", function(){ afficherChoixAdversaireJeu("nombre"); });
 
-    await chargerInvitationsMorpion();
+    await chargerInvitationsJeuxSupplementaires();
+    await initialiserEcouteJeuxSupplementaires();
 }
 
 
@@ -3826,7 +3983,10 @@ function afficherPartieMorpion(partie) {
             <h3>❌⭕ Morpion</h3>
             <div class="info-morpion" id="infoMorpion"></div>
             <div class="grille-morpion" id="grilleMorpion"></div>
-            <button class="btn-quitter-jeu" id="btnQuitterMorpion" type="button">Quitter la partie</button>
+            <div class="boutons-jeu">
+                ${partie.statut === "terminee" ? '<button class="btn-rejouer-jeu" id="btnRejouerMorpion" type="button">🔄 Rejouer</button>' : ''}
+                <button class="btn-quitter-jeu" id="btnQuitterMorpion" type="button">← Quitter</button>
+            </div>
         </div>
     `;
 
@@ -3863,6 +4023,24 @@ function afficherPartieMorpion(partie) {
         });
         zone.appendChild(bouton);
     });
+
+    const btnRejouer = document.getElementById("btnRejouerMorpion");
+    if (btnRejouer) {
+        btnRejouer.addEventListener("click", rejouerMorpion);
+    }
+
+    if (partie.statut === "terminee") {
+        const actions = document.getElementById("actionsMorpion");
+        const rejouer = document.createElement("button");
+        rejouer.className = "btn-rejouer-jeu";
+        rejouer.textContent = "🔄 Rejouer avec le même pote";
+        rejouer.addEventListener("click", async function() {
+            const adversaireId = String(partie.joueur_x) === String(utilisateur.id) ? partie.joueur_o : partie.joueur_x;
+            const { data: profil } = await client.from("profils").select("id,pseudo").eq("id", adversaireId).maybeSingle();
+            if (profil) await inviterAuMorpion(profil);
+        });
+        actions.appendChild(rejouer);
+    }
 
     document.getElementById("btnQuitterMorpion")
         .addEventListener("click", quitterMorpion);
@@ -3929,6 +4107,158 @@ async function jouerCoupMorpion(index) {
 
     partieMorpionActuelle = data;
     afficherPartieMorpion(data);
+}
+
+
+async function rejouerMorpion() {
+    const ancienne = partieMorpionActuelle;
+    if (!ancienne || !utilisateur) return;
+
+    const joueurX = ancienne.joueur_x;
+    const joueurO = ancienne.joueur_o;
+
+    const { data, error } = await client
+        .from("parties_morpion")
+        .insert({
+            joueur_x: joueurX,
+            joueur_o: joueurO,
+            tour: "X",
+            grille: ["", "", "", "", "", "", "", "", ""],
+            statut: "en_cours"
+        })
+        .select()
+        .single();
+
+    if (error) {
+        alert("Impossible de relancer la partie : " + error.message);
+        return;
+    }
+
+    partieMorpionActuelle = data;
+    symboleMorpion = String(utilisateur.id) === String(joueurX) ? "X" : "O";
+    afficherPartieMorpion(data);
+    demarrerSurveillanceMorpion(data.id);
+}
+
+
+function afficherPFC() {
+    listeMessages.innerHTML = `
+        <div class="zone-jeu-simple">
+            <h3>✊📄✂️ Pierre-feuille-ciseaux</h3>
+            <div class="resultat-jeu" id="resultatPFC">Choisis ton coup !</div>
+            <div class="choix-jeu">
+                <button type="button" data-pfc="Pierre">✊ Pierre</button>
+                <button type="button" data-pfc="Feuille">📄 Feuille</button>
+                <button type="button" data-pfc="Ciseaux">✂️ Ciseaux</button>
+            </div>
+            <button class="btn-rejouer-jeu" id="btnRejouerPFC" type="button" style="display:none">🔄 Rejouer</button>
+            <button class="btn-quitter-jeu" id="btnQuitterJeuSimple" type="button">← Retour aux jeux</button>
+        </div>`;
+
+    document.querySelectorAll("[data-pfc]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            const choix = this.dataset.pfc;
+            const options = ["Pierre", "Feuille", "Ciseaux"];
+            const ordinateur = options[Math.floor(Math.random() * options.length)];
+            let resultat = choix === ordinateur ? "🤝 Match nul !" :
+                ((choix === "Pierre" && ordinateur === "Ciseaux") || (choix === "Feuille" && ordinateur === "Pierre") || (choix === "Ciseaux" && ordinateur === "Feuille") ? "🏆 Tu as gagné !" : "😄 L'ordinateur a gagné !");
+            document.getElementById("resultatPFC").textContent = `Toi : ${choix} — Ordinateur : ${ordinateur} — ${resultat}`;
+            document.querySelectorAll("[data-pfc]").forEach(b => b.disabled = true);
+            document.getElementById("btnRejouerPFC").style.display = "inline-block";
+        });
+    });
+    document.getElementById("btnRejouerPFC").addEventListener("click", afficherPFC);
+    document.getElementById("btnQuitterJeuSimple").addEventListener("click", afficherJeux);
+}
+
+
+function afficherDevineNombre() {
+    const secret = Math.floor(Math.random() * 100) + 1;
+    let essais = 0;
+    listeMessages.innerHTML = `
+        <div class="zone-jeu-simple zone-nombre">
+            <h3>🔢 Devine le nombre</h3>
+            <div class="resultat-jeu" id="resultatNombre">J'ai choisi un nombre entre 1 et 100.</div>
+            <input class="champ" id="propositionNombre" type="number" min="1" max="100" placeholder="Ton nombre">
+            <button class="btn-jeu" id="btnTesterNombre" type="button">Tester</button>
+            <button class="btn-rejouer-jeu" id="btnRejouerNombre" type="button" style="display:none">🔄 Rejouer</button>
+            <button class="btn-quitter-jeu" id="btnQuitterJeuSimple" type="button">← Retour aux jeux</button>
+        </div>`;
+
+    const input = document.getElementById("propositionNombre");
+    const tester = document.getElementById("btnTesterNombre");
+    tester.addEventListener("click", function() {
+        const n = Number(input.value);
+        if (!Number.isInteger(n) || n < 1 || n > 100) {
+            document.getElementById("resultatNombre").textContent = "Entre un nombre entier entre 1 et 100.";
+            return;
+        }
+        essais++;
+        if (n === secret) {
+            document.getElementById("resultatNombre").textContent = `🏆 Trouvé en ${essais} essai${essais > 1 ? "s" : ""} !`;
+            input.disabled = true; tester.disabled = true;
+            document.getElementById("btnRejouerNombre").style.display = "inline-block";
+        } else {
+            document.getElementById("resultatNombre").textContent = n < secret ? "⬆️ C'est plus !" : "⬇️ C'est moins !";
+        }
+    });
+    document.getElementById("btnRejouerNombre").addEventListener("click", afficherDevineNombre);
+    document.getElementById("btnQuitterJeuSimple").addEventListener("click", afficherJeux);
+}
+
+
+function afficherPuissance4() {
+    let grille = Array(42).fill(0);
+    let termine = false;
+
+    listeMessages.innerHTML = `
+        <div class="zone-jeu-simple">
+            <h3>🟡 Puissance 4</h3>
+            <div class="resultat-jeu" id="resultatP4">À toi ! Tu joues en rouge.</div>
+            <div class="grille-puissance4" id="grilleP4"></div>
+            <button class="btn-rejouer-jeu" id="btnRejouerP4" type="button" style="display:none">🔄 Rejouer</button>
+            <button class="btn-quitter-jeu" id="btnQuitterJeuSimple" type="button">← Retour aux jeux</button>
+        </div>`;
+
+    function gagne(g, joueur) {
+        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+        for (let r=0;r<6;r++) for (let c=0;c<7;c++) {
+            const i=r*7+c; if(g[i]!==joueur) continue;
+            for(const [dr,dc] of dirs){ let n=1,rr=r+dr,cc=c+dc; while(rr>=0&&rr<6&&cc>=0&&cc<7&&g[rr*7+cc]===joueur){n++;rr+=dr;cc+=dc;} if(n>=4)return true; }
+        } return false;
+    }
+    function rendu() {
+        const zone=document.getElementById("grilleP4"); zone.innerHTML="";
+        for(let i=0;i<42;i++){ const b=document.createElement("button"); b.className="case-puissance4"+(grille[i]===1?" joueur1":grille[i]===2?" joueur2":""); b.type="button"; b.disabled=termine; b.addEventListener("click",()=>jouer(i%7)); zone.appendChild(b); }
+    }
+    function jouer(col){
+        if(termine)return; let row=-1; for(let r=5;r>=0;r--) if(!grille[r*7+col]){row=r;break;} if(row<0)return;
+        grille[row*7+col]=1;
+        if(gagne(grille,1)){fin("🏆 Tu as gagné !");return;}
+        if(grille.every(Boolean)){fin("🤝 Match nul !");return;}
+        let coups=[]; for(let c=0;c<7;c++) if(!grille[c]) coups.push(c); if(!coups.length)return;
+        const cc=coups[Math.floor(Math.random()*coups.length)]; for(let r=5;r>=0;r--) if(!grille[r*7+cc]){grille[r*7+cc]=2;break;}
+        if(gagne(grille,2)){fin("😄 L'ordinateur a gagné !");return;} if(grille.every(Boolean)){fin("🤝 Match nul !");return;}
+        document.getElementById("resultatP4").textContent="À toi !"; rendu();
+    }
+    function fin(t){termine=true;document.getElementById("resultatP4").textContent=t;document.getElementById("btnRejouerP4").style.display="inline-block";rendu();}
+    rendu();
+    document.getElementById("btnRejouerP4").addEventListener("click", afficherPuissance4);
+    document.getElementById("btnQuitterJeuSimple").addEventListener("click", afficherJeux);
+}
+
+
+function afficherMemoire() {
+    const valeurs=["🍎","🍎","🚗","🚗","🐶","🐶","⭐","⭐","⚽","⚽","🎮","🎮","🍕","🍕","🚀","🚀"].sort(()=>Math.random()-.5);
+    let ouvertes=[], trouvees=new Set(), bloque=false;
+    listeMessages.innerHTML=`<div class="zone-jeu-simple"><h3>🧠 Mémoire</h3><div class="resultat-jeu" id="resultatMemoire">Trouve toutes les paires !</div><div class="grille-memoire" id="grilleMemoire"></div><button class="btn-rejouer-jeu" id="btnRejouerMemoire" type="button" style="display:none">🔄 Rejouer</button><button class="btn-quitter-jeu" id="btnQuitterJeuSimple" type="button">← Retour aux jeux</button></div>`;
+    const zone=document.getElementById("grilleMemoire");
+    function rendu(){zone.innerHTML=""; valeurs.forEach((v,i)=>{const b=document.createElement("button");b.type="button";b.className="case-memoire"+(ouvertes.includes(i)?" revelee":"")+(trouvees.has(i)?" trouvee":"");b.textContent=(ouvertes.includes(i)||trouvees.has(i))?v:"?";b.disabled=b.classList.contains("trouvee")||bloque;b.addEventListener("click",()=>clic(i));zone.appendChild(b);});}
+    function clic(i){if(bloque||trouvees.has(i)||ouvertes.includes(i))return;ouvertes.push(i);rendu();if(ouvertes.length===2){bloque=true;if(valeurs[ouvertes[0]]===valeurs[ouvertes[1]]){ouvertes.forEach(x=>trouvees.add(x));ouvertes=[];bloque=false;rendu();verif();}else{setTimeout(()=>{ouvertes=[];bloque=false;rendu();},700);}}}
+    function verif(){if(trouvees.size===valeurs.length){document.getElementById("resultatMemoire").textContent="🏆 Bravo, toutes les paires sont trouvées !";document.getElementById("btnRejouerMemoire").style.display="inline-block";}}
+    rendu();
+    document.getElementById("btnRejouerMemoire").addEventListener("click", afficherMemoire);
+    document.getElementById("btnQuitterJeuSimple").addEventListener("click", afficherJeux);
 }
 
 
@@ -4005,7 +4335,7 @@ async function initialiserEcouteMorpion() {
                 arreterSurveillanceMorpion();
             }
 
-            if (document.getElementById("grilleMorpion")) {
+            if (titrePage.textContent.includes("Morpion")) {
                 afficherPartieMorpion(partie);
             }
         })
@@ -4060,6 +4390,184 @@ function afficherFenetreInvitationMorpion(partie) {
 }
 
 
+
+
+/* =========================================================
+   JEUX SUPPLEMENTAIRES - INVITATIONS + MULTIJOUEUR
+========================================================= */
+
+function nomJeu(type) {
+    return {pfc:"Pierre-feuille-ciseaux", puissance4:"Puissance 4", memoire:"Mémoire", nombre:"Devine le nombre"}[type] || type;
+}
+
+function emojiJeu(type) {
+    return {pfc:"✊📄✂️", puissance4:"🔴🟡", memoire:"🧠", nombre:"🔢"}[type] || "🎮";
+}
+
+function autreJoueurJeu(partie) {
+    return String(partie.joueur_1) === String(utilisateur.id) ? partie.joueur_2 : partie.joueur_1;
+}
+
+async function afficherChoixAdversaireJeu(type) {
+    typeJeuActuel = type;
+    const { data: profils, error } = await client.from("profils").select("id,pseudo").neq("id", utilisateur.id).order("pseudo", {ascending:true});
+    if (error) { alert("Impossible de charger les potes : " + error.message); return; }
+    const autres = profils || [];
+    if (!autres.length) { alert("Il n'y a aucun autre compte à inviter pour le moment."); return; }
+
+    listeMessages.innerHTML = `
+        <div class="choix-jeu-titre"><h3>${emojiJeu(type)} ${nomJeu(type)}</h3></div>
+        <div class="choix-jeu-sous-titre">Choisis avec qui tu veux jouer.</div>
+        <div class="zone-recherche"><input class="champ" id="rechercheAdversaireJeu" type="text" placeholder="🔎 Rechercher un pote..." autocomplete="off"></div>
+        <div id="listeAdversairesJeu" class="grille-utilisateurs"></div>
+        <button class="btn-retour-jeu" id="btnRetourJeu">← Retour aux jeux</button>
+    `;
+
+    const afficher = function(liste) {
+        const zone=document.getElementById("listeAdversairesJeu"); if(!zone)return; zone.innerHTML="";
+        liste.forEach(function(profil){
+            const carte=document.createElement("div"); carte.className="carte-utilisateur";
+            const avatar=document.createElement("div"); avatar.className="avatar-utilisateur"; avatar.textContent=profil.pseudo.charAt(0).toUpperCase();
+            const infos=document.createElement("div"); infos.className="infos-utilisateur";
+            const nom=document.createElement("div"); nom.className="nom-utilisateur"; nom.textContent="@"+profil.pseudo;
+            const bouton=document.createElement("button"); bouton.className="btn-parler"; bouton.textContent="🎮 Inviter";
+            bouton.addEventListener("click",function(){ inviterJeuGenerique(type,profil.id); });
+            infos.appendChild(nom); carte.appendChild(avatar); carte.appendChild(infos); carte.appendChild(bouton); zone.appendChild(carte);
+        });
+    };
+    afficher(autres);
+    document.getElementById("rechercheAdversaireJeu").addEventListener("input",function(){ const q=this.value.trim().toLowerCase(); afficher(autres.filter(p=>p.pseudo.toLowerCase().includes(q))); });
+    document.getElementById("btnRetourJeu").addEventListener("click",afficherJeux);
+}
+
+async function inviterJeuGenerique(type, adversaireId) {
+    const etat = initialiserEtatJeu(type);
+    const {data,error}=await client.from("parties_jeux").insert({type_jeu:type,joueur_1:utilisateur.id,joueur_2:adversaireId,statut:"invitation",tour:utilisateur.id,etat:etat}).select().single();
+    if(error){alert("Impossible d'envoyer l'invitation : "+error.message); console.error(error); return;}
+    partieJeuActuelle=data; joueurJeuActuel=utilisateur.id; typeJeuActuel=type;
+    afficherAttenteJeu(data);
+    await initialiserEcouteJeuxSupplementaires();
+}
+
+function initialiserEtatJeu(type) {
+    if(type==="pfc") return {choix1:null,choix2:null};
+    if(type==="puissance4") return {grille:Array(42).fill(""),couleur1:"rouge",couleur2:"jaune"};
+    if(type==="memoire") { const cartes=["🍎","🍎","🍌","🍌","🍇","🍇","🍉","🍉","🍒","🍒","🥝","🥝"]; return {cartes:cartes.sort(()=>Math.random()-0.5),revelees:[],trouvees:[],tentatives:0}; }
+    if(type==="nombre") return {secret:null,guess:null,message:"Le joueur 1 doit choisir un nombre entre 1 et 100."};
+    return {};
+}
+
+function afficherAttenteJeu(partie){
+    listeMessages.innerHTML=`<div class="zone-jeu-en-ligne"><h3>${emojiJeu(partie.type_jeu)} ${nomJeu(partie.type_jeu)}</h3><div class="info-jeu-en-ligne">📩 Invitation envoyée. En attente de ton pote…</div><div class="actions-jeu"><button class="btn-retour-jeu" id="btnRetourAttente">← Retour aux jeux</button></div></div>`;
+    document.getElementById("btnRetourAttente").addEventListener("click",afficherJeux);
+}
+
+async function chargerInvitationsJeuxSupplementaires(){
+    const zone=document.getElementById("listeInvitationsJeu"); if(!zone||!utilisateur)return;
+    const {data,error}=await client.from("parties_jeux").select("*").eq("joueur_2",utilisateur.id).eq("statut","invitation").order("created_at",{ascending:false});
+    if(error){console.error(error);return;} zone.innerHTML=""; if(!data||!data.length)return;
+    const ids=[...new Set(data.map(p=>p.joueur_1))]; const {data:profils}=await client.from("profils").select("id,pseudo").in("id",ids);
+    data.forEach(function(partie){
+        const profil=(profils||[]).find(p=>String(p.id)===String(partie.joueur_1));
+        const bloc=document.createElement("div"); bloc.className="invitation-jeu";
+        const texte=document.createElement("div"); texte.textContent=emojiJeu(partie.type_jeu)+" "+(profil?"@"+profil.pseudo:"Un pote")+" t'invite à jouer à "+nomJeu(partie.type_jeu);
+        const actions=document.createElement("div"); actions.className="invitation-jeu-actions";
+        const accepter=document.createElement("button"); accepter.className="btn-accepter-jeu"; accepter.textContent="Accepter"; accepter.addEventListener("click",()=>accepterInvitationJeu(partie.id));
+        const refuser=document.createElement("button"); refuser.className="btn-refuser-jeu"; refuser.textContent="Refuser"; refuser.addEventListener("click",()=>refuserInvitationJeu(partie.id));
+        actions.appendChild(accepter); actions.appendChild(refuser); bloc.appendChild(texte); bloc.appendChild(actions); zone.appendChild(bloc);
+    });
+}
+
+async function accepterInvitationJeu(id){
+    const {data,error}=await client.from("parties_jeux").update({statut:"en_cours",tour:null}).eq("id",id).eq("joueur_2",utilisateur.id).eq("statut","invitation").select().single();
+    if(error){alert("Impossible d'accepter la partie : "+error.message);return;}
+    data.tour=data.joueur_1; partieJeuActuelle=data; typeJeuActuel=data.type_jeu; joueurJeuActuel=utilisateur.id;
+    await client.from("parties_jeux").update({tour:data.joueur_1}).eq("id",id);
+    afficherPartieJeuSupplementaire(data); await initialiserEcouteJeuxSupplementaires();
+}
+
+async function refuserInvitationJeu(id){ await client.from("parties_jeux").update({statut:"refusee"}).eq("id",id).eq("joueur_2",utilisateur.id); await afficherJeux(); }
+
+function afficherPartieJeuSupplementaire(partie){
+    if(!partie)return; typeJeuActuel=partie.type_jeu;
+    if(partie.type_jeu==="pfc") afficherPFC(partie);
+    else if(partie.type_jeu==="puissance4") afficherPuissance4(partie);
+    else if(partie.type_jeu==="memoire") afficherMemoire(partie);
+    else if(partie.type_jeu==="nombre") afficherNombre(partie);
+}
+
+function actionsFinJeu(partie, parent){
+    const actions=document.createElement("div"); actions.className="actions-jeu";
+    if(partie.statut==="terminee"){
+        const b=document.createElement("button"); b.className="btn-rejouer-jeu"; b.textContent="🔄 Rejouer avec le même pote";
+        b.addEventListener("click",()=>inviterJeuGenerique(partie.type_jeu,autreJoueurJeu(partie))); actions.appendChild(b);
+    }
+    const retour=document.createElement("button"); retour.className="btn-retour-jeu"; retour.textContent="← Jeux"; retour.addEventListener("click",()=>{partieJeuActuelle=null;afficherJeux();}); actions.appendChild(retour); parent.appendChild(actions);
+}
+
+function statutJeu(partie){
+    if(partie.statut==="invitation") return "📩 Invitation envoyée. En attente de ton pote…";
+    if(partie.statut==="terminee") return partie.gagnant===null?"🤝 Match nul !":String(partie.gagnant)===String(utilisateur.id)?"🏆 Tu as gagné !":"😄 Ton pote a gagné.";
+    if(partie.tour) return String(partie.tour)===String(utilisateur.id)?"👉 C'est ton tour !":"⏳ C'est au tour de ton pote.";
+    return "";
+}
+
+async function majEtatJeu(partie,etat,extra={}){
+    const {data,error}=await client.from("parties_jeux").update({etat:etat,...extra}).eq("id",partie.id).eq("statut","en_cours").select().single();
+    if(error){console.error(error);return null;} partieJeuActuelle=data; afficherPartieJeuSupplementaire(data); return data;
+}
+
+function afficherPFC(partie){
+    const e=partie.etat||{}; const moi=String(partie.joueur_1)===String(utilisateur.id)?"choix1":"choix2";
+    const fini=partie.statut==="terminee"; const monChoix=e[moi];
+    listeMessages.innerHTML=`<div class="zone-jeu-en-ligne"><h3>✊📄✂️ Pierre-feuille-ciseaux</h3><div class="info-jeu-en-ligne" id="infoJeu">${fini?statutJeu(partie):monChoix?"⏳ En attente du choix de ton pote.":"👉 Choisis ton coup !"}</div><div class="grille-pfc" id="grillePfc"></div><div id="actionsFin"></div></div>`;
+    const zone=document.getElementById("grillePfc"); [["pierre","✊"],["feuille","📄"],["ciseaux","✂️"]].forEach(([v,em])=>{const b=document.createElement("button");b.className="btn-pfc";b.textContent=em;b.disabled=!!monChoix||fini||String(partie.tour)!==String(utilisateur.id);b.addEventListener("click",async()=>{const n={...e,[moi]:v};let gagnant=null;if(n.choix1&&n.choix2){if(n.choix1!==n.choix2){const win=(n.choix1==="pierre"&&n.choix2==="ciseaux")||(n.choix1==="feuille"&&n.choix2==="pierre")||(n.choix1==="ciseaux"&&n.choix2==="feuille");gagnant=win?partie.joueur_1:partie.joueur_2;}return majEtatJeu(partie,n,{statut:"terminee",gagnant:gagnant});}return majEtatJeu(partie,n,{tour:autreJoueurJeu(partie)});});zone.appendChild(b);});
+    if(fini)actionsFinJeu(partie,document.getElementById("actionsFin"));
+}
+
+function afficherPuissance4(partie){
+    const e=partie.etat||initialiserEtatJeu("puissance4"); const moi=String(partie.joueur_1)===String(utilisateur.id); const couleur=moi?"rouge":"jaune";
+    listeMessages.innerHTML=`<div class="zone-jeu-en-ligne"><h3>🔴🟡 Puissance 4</h3><div class="info-jeu-en-ligne">${statutJeu(partie)}</div><div class="grille-puissance4" id="grilleP4"></div><div id="actionsFin"></div></div>`;
+    const zone=document.getElementById("grilleP4"); e.grille.forEach((v,i)=>{const b=document.createElement("button");b.className="case-puissance4 "+(v||"");b.disabled=!!v||String(partie.tour)!==String(utilisateur.id)||partie.statut!=="en_cours";b.addEventListener("click",()=>jouerP4(partie,i,couleur));zone.appendChild(b);});
+    if(partie.statut==="terminee")actionsFinJeu(partie,document.getElementById("actionsFin"));
+}
+
+async function jouerP4(partie,index,couleur){
+    const e=partie.etat||initialiserEtatJeu("puissance4"); const col=index%7; let ligne=-1; for(let r=5;r>=0;r--){if(!e.grille[r*7+col]){ligne=r;break;}} if(ligne<0)return; const g=[...e.grille];g[ligne*7+col]=couleur;
+    const gagneP4=(rr,cc)=>{const dirs=[[1,0],[0,1],[1,1],[1,-1]];for(const [dr,dc] of dirs){let n=1;for(const sg of [1,-1]){let r=rr+dr*sg,c=cc+dc*sg;while(r>=0&&r<6&&c>=0&&c<7&&g[r*7+c]===couleur){n++;r+=dr*sg;c+=dc*sg;}}if(n>=4)return true;}return false;};
+    const fini=gagneP4(ligne,col)||g.every(Boolean); const gagnant=gagneP4(ligne,col)?utilisateur.id:null; await majEtatJeu(partie,{...e,grille:g},{tour:autreJoueurJeu(partie),statut:fini?"terminee":"en_cours",gagnant:gagnant});
+}
+
+function afficherMemoire(partie){
+    const e=partie.etat||initialiserEtatJeu("memoire"); const moi=String(partie.joueur_1)===String(utilisateur.id); const peut=String(partie.tour)===String(utilisateur.id)&&partie.statut==="en_cours";
+    listeMessages.innerHTML=`<div class="zone-jeu-en-ligne"><h3>🧠 Mémoire</h3><div class="info-jeu-en-ligne">${statutJeu(partie)}</div><div class="zone-memoire" id="zoneMemoire"></div><div id="actionsFin"></div></div>`;
+    const zone=document.getElementById("zoneMemoire"); e.cartes.forEach((v,i)=>{const b=document.createElement("button");b.className="case-memoire";const visible=e.revelees.includes(i)||e.trouvees.includes(i);b.textContent=visible?v:"❓";b.disabled=!peut||visible;b.addEventListener("click",()=>jouerMemoire(partie,i));zone.appendChild(b);}); if(partie.statut==="terminee")actionsFinJeu(partie,document.getElementById("actionsFin"));
+}
+
+async function jouerMemoire(partie,index){
+    const e=JSON.parse(JSON.stringify(partie.etat)); if(e.revelees.includes(index)||e.trouvees.includes(index))return; e.revelees.push(index);
+    if(e.revelees.length<2){await majEtatJeu(partie,e,{tour:utilisateur.id});setTimeout(async()=>{const actuel=partieJeuActuelle;if(!actuel||actuel.id!==partie.id)return;const ee=JSON.parse(JSON.stringify(actuel.etat));if(ee.revelees.length===2){const [a,b]=ee.revelees;if(ee.cartes[a]===ee.cartes[b])ee.trouvees.push(a,b);ee.revelees=[];const fini=ee.trouvees.length===ee.cartes.length;await majEtatJeu(actuel,ee,{tour:fini?null:autreJoueurJeu(actuel),statut:fini?"terminee":"en_cours",gagnant:fini?utilisateur.id:null});}},900);}
+}
+
+function afficherNombre(partie){
+    const e=partie.etat||initialiserEtatJeu("nombre"); const estJ1=String(partie.joueur_1)===String(utilisateur.id); const fini=partie.statut==="terminee";
+    listeMessages.innerHTML=`<div class="zone-jeu-en-ligne"><h3>🔢 Devine le nombre</h3><div class="info-jeu-en-ligne" id="infoNombre"></div><div class="zone-nombre" id="zoneNombre"></div><div id="actionsFin"></div></div>`;
+    const info=document.getElementById("infoNombre"),zone=document.getElementById("zoneNombre");
+    if(fini){info.textContent=statutJeu(partie);actionsFinJeu(partie,document.getElementById("actionsFin"));return;}
+    if(estJ1&&e.secret===null){info.textContent="Choisis un nombre secret entre 1 et 100.";const input=document.createElement("input");input.type="number";input.min=1;input.max=100;input.placeholder="Nombre secret";const b=document.createElement("button");b.className="btn-jeu";b.textContent="Valider";b.onclick=async()=>{const n=Number(input.value);if(n<1||n>100){alert("Choisis un nombre entre 1 et 100.");return;}await majEtatJeu(partie,{...e,secret:n,message:"Ton pote peut maintenant deviner."},{tour:partie.joueur_2});};zone.appendChild(input);zone.appendChild(b);return;}
+    info.textContent=e.message||"";
+    if(!estJ1&&e.secret!==null){const input=document.createElement("input");input.type="number";input.min=1;input.max=100;input.placeholder="Ta proposition";const b=document.createElement("button");b.className="btn-jeu";b.textContent="Deviner";b.onclick=async()=>{const n=Number(input.value);if(n<1||n>100)return;let message=n<e.secret?"⬆️ Plus grand !":n>e.secret?"⬇️ Plus petit !":"🎉 Trouvé !";const fini=n===e.secret;await majEtatJeu(partie,{...e,guess:n,message},{statut:fini?"terminee":"en_cours",tour:fini?null:partie.joueur_2});};zone.appendChild(input);zone.appendChild(b);}
+}
+
+async function initialiserEcouteJeuxSupplementaires(){
+    if(canalJeuxSupplementaires){try{await client.removeChannel(canalJeuxSupplementaires);}catch(e){}}
+    canalJeuxSupplementaires=client.channel("jeux-supplementaires").on("postgres_changes",{event:"INSERT",schema:"public",table:"parties_jeux"},async payload=>{const p=payload.new;if(!utilisateur||String(p.joueur_2)!==String(utilisateur.id)||p.statut!=="invitation")return;if(titrePage.textContent.includes("Jeux")){await chargerInvitationsJeuxSupplementaires();}else{afficherFenetreInvitationJeu(p);}}).on("postgres_changes",{event:"UPDATE",schema:"public",table:"parties_jeux"},payload=>{const p=payload.new;if(!utilisateur)return;const concerne=String(p.joueur_1)===String(utilisateur.id)||String(p.joueur_2)===String(utilisateur.id);if(!concerne)return;if(partieJeuActuelle&&String(partieJeuActuelle.id)===String(p.id)){partieJeuActuelle=p;if(p.statut!=="invitation")afficherPartieJeuSupplementaire(p);}}).subscribe();
+}
+
+function afficherFenetreInvitationJeu(partie){
+    if(document.querySelector(".fenetre-invitation-jeu-generique"))return;
+    const f=document.createElement("div");f.className="fenetre-invitation-jeu fenetre-invitation-jeu-generique";const b=document.createElement("div");b.className="boite-invitation-jeu";b.innerHTML=`<h2>${emojiJeu(partie.type_jeu)} Invitation</h2><p>Un pote t'invite à jouer à ${nomJeu(partie.type_jeu)} !</p>`;const a=document.createElement("div");a.className="actions-invitation-jeu";const ok=document.createElement("button");ok.textContent="Accepter";ok.style.background="var(--vert)";ok.style.color="white";ok.onclick=async()=>{f.remove();await accepterInvitationJeu(partie.id)};const no=document.createElement("button");no.textContent="Refuser";no.style.background="#fee2e2";no.style.color="#b91c1c";no.onclick=async()=>{f.remove();await refuserInvitationJeu(partie.id)};a.appendChild(ok);a.appendChild(no);b.appendChild(a);f.appendChild(b);document.body.appendChild(f);
+}
 
 async function afficherPotes() {
 
