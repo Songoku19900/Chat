@@ -3639,14 +3639,42 @@ function ecouterMessages() {
                         !conversationActuelle
                     ) {
 
-                        afficherMessage(
-                            payload.new
-                        );
+                        /* Évite les doublons si le message est déjà affiché. */
+                        const dejaPresent =
+                            document.querySelector(
+                                `[data-message-id="${CSS.escape(String(payload.new.id))}"]`
+                            );
+
+                        if (!dejaPresent) {
+                            afficherMessage(
+                                payload.new
+                            );
+                        }
 
                         allerEnBas();
 
                     }
 
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "DELETE",
+                    schema: "public",
+                    table: "messages"
+                },
+                function(payload) {
+                    const id = payload.old?.id;
+                    if (id == null) return;
+
+                    document
+                        .querySelectorAll(`[data-message-id="${CSS.escape(String(id))}"]`)
+                        .forEach(function(element) {
+                            const parent = element.closest(".message, .message-prive");
+                            if (parent) parent.remove();
+                            else element.remove();
+                        });
                 }
             )
             .subscribe();
@@ -5295,6 +5323,17 @@ async function chargerMessagesPrives(
             ".en-tete-prive"
         );
 
+    /*
+       IMPORTANT : on nettoie les anciens messages avant
+       de recharger ceux de Supabase.
+       Sinon, après une suppression, l'ancien message reste
+       dans le HTML et le message restant est ajouté une 2e fois.
+    */
+    Array.from(listeMessages.children).forEach(function(element) {
+        if (!element.classList.contains("en-tete-prive")) {
+            element.remove();
+        }
+    });
 
     const chargement =
         document.createElement("div");
@@ -7585,14 +7624,43 @@ function ecouterMessagesPrives(
                         )
                     ) {
 
-                        afficherMessagePrive(
-                            payload.new
-                        );
+                        /* Évite les doublons dans la conversation privée. */
+                        const dejaPresent =
+                            document.querySelector(
+                                `[data-message-id="${CSS.escape(String(payload.new.id))}"]`
+                            );
+
+                        if (!dejaPresent) {
+                            afficherMessagePrive(
+                                payload.new
+                            );
+                        }
 
                         allerEnBas();
 
                     }
 
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "DELETE",
+                    schema: "public",
+                    table: "messages_prives",
+                    filter: "conversation_id=eq." + conversationId
+                },
+                function(payload) {
+                    const id = payload.old?.id;
+                    if (id == null) return;
+
+                    document
+                        .querySelectorAll(`[data-message-id="${CSS.escape(String(id))}"]`)
+                        .forEach(function(element) {
+                            const parent = element.closest(".message, .message-prive");
+                            if (parent) parent.remove();
+                            else element.remove();
+                        });
                 }
             )
             .subscribe();
@@ -7758,7 +7826,37 @@ function initialiserCanalReactions(){if(canalReactions||!utilisateur)return;cana
 async function chargerReactions(id,bloc){let z=bloc.querySelector(".zone-reactions");if(!z)return;let r=await client.from("reactions_messages").select("reaction,utilisateur_id").eq("message_id",id);if(r.error)return;let g={};(r.data||[]).forEach(x=>(g[x.reaction]??=[]).push(x.utilisateur_id));z.querySelectorAll(".btn-reaction").forEach(b=>{let a=g[b.dataset.reaction]||[];b.classList.toggle("actif",a.some(x=>String(x)===String(utilisateur.id)));b.querySelector(".compteur-reaction").textContent=a.length||"";});}
 function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id)){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent="🗑️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type);z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
 async function basculerReaction(id,type,r,bloc){let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();let e=q.data?(await client.from("reactions_messages").delete().eq("id",q.data.id)).error:(await client.from("reactions_messages").insert({message_id:id,type_message:type,utilisateur_id:utilisateur.id,reaction:r})).error;if(e)alert(e.message);else chargerReactions(id,bloc);}
-async function supprimerMessage(id,type){if(!confirm("Supprimer ce message ?"))return;let table=type==="public"?"messages":"messages_prives",col=type==="public"?"utilisateur_id":"auteur_id";let r=await client.from(table).delete().eq("id",id).eq(col,utilisateur.id);if(r.error){alert("Impossible de supprimer : "+r.error.message);return;}await client.from("reactions_messages").delete().eq("message_id",id);if(type==="public")chargerMessages();else if(conversationActuelle)chargerMessagesPrives(conversationActuelle.id);}
+async function supprimerMessage(id,type){
+    if(!confirm("Supprimer ce message ?")) return;
+
+    const table = type === "public" ? "messages" : "messages_prives";
+    const col = type === "public" ? "utilisateur_id" : "auteur_id";
+
+    const r = await client
+        .from(table)
+        .delete()
+        .eq("id", id)
+        .eq(col, utilisateur.id);
+
+    if(r.error){
+        alert("Impossible de supprimer : " + r.error.message);
+        return;
+    }
+
+    await client
+        .from("reactions_messages")
+        .delete()
+        .eq("message_id", id);
+
+    /* Suppression immédiate à l'écran : aucun doublon ne peut rester. */
+    document
+        .querySelectorAll(`[data-message-id="${CSS.escape(String(id))}"]`)
+        .forEach(function(element){
+            const messageParent = element.closest(".message, .message-prive");
+            if(messageParent) messageParent.remove();
+            else element.remove();
+        });
+}
 function initialiserEcouteTyping(id){arreterEcouteTyping();canalTyping=client.channel("typing-"+id);canalTyping.on("broadcast",{event:"typing"},p=>{if(String(p.payload?.userId)===String(utilisateur.id))return;let e=document.getElementById("indicateurTyping");if(p.payload?.typing){if(!e){e=document.createElement("div");e.id="indicateurTyping";e.className="indicateur-ecrit";listeMessages.appendChild(e);}e.textContent="@"+(p.payload.pseudo||"Ton pote")+" écrit…";listeMessages.appendChild(e);}else if(e)e.remove();}).subscribe();}
 function arreterEcouteTyping(){if(canalTyping){client.removeChannel(canalTyping);canalTyping=null;}let e=document.getElementById("indicateurTyping");if(e)e.remove();}
 async function signalerFrappe(){if(!conversationActuelle||!canalTyping)return;await canalTyping.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:true}});clearTimeout(typingTimeout);typingTimeout=setTimeout(()=>canalTyping?.send({type:"broadcast",event:"typing",payload:{userId:utilisateur.id,pseudo:pseudoActuel,typing:false}}),900);}
