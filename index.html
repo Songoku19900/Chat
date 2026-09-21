@@ -3794,6 +3794,12 @@ async function envoyerMessage() {
 
         inputMessage.value = "";
 
+        await creerNotificationsDiscussionGenerale(
+            "discussion_generale",
+            "💬 Nouveau message dans la discussion générale",
+            "@" + pseudoActuel + " a envoyé un message dans la discussion générale."
+        );
+
     }
 
 
@@ -5887,6 +5893,12 @@ async function envoyerVocalPublic(blob) {
 
         if (error) throw error;
 
+        await creerNotificationsDiscussionGenerale(
+            "discussion_generale",
+            "🎙️ Nouveau vocal dans la discussion générale",
+            "@" + pseudoActuel + " a envoyé un vocal dans la discussion générale."
+        );
+
         statutVocal.textContent = "Vocal envoyé";
         setTimeout(function() { statutVocal.textContent = ""; }, 1500);
 
@@ -6213,6 +6225,12 @@ async function envoyerImagePrive(
                 });
 
             if (error) throw error;
+
+            await creerNotificationsDiscussionGenerale(
+                "discussion_generale",
+                "🖼️ Nouvelle image dans la discussion générale",
+                "@" + pseudoActuel + " a envoyé une image dans la discussion générale."
+            );
 
             statutVocal.textContent = "Image envoyée";
             setTimeout(function() { statutVocal.textContent = ""; }, 1500);
@@ -8392,6 +8410,28 @@ async function creerNotification(utilisateurId, type, titre, message = "") {
         if (error) console.error("Erreur création notification :", error);
     } catch (e) {
         console.error("Erreur création notification :", e);
+    }
+}
+
+async function creerNotificationsDiscussionGenerale(type, titre, message) {
+    if (!utilisateur || !client) return;
+    try {
+        const { data: profils, error: erreurProfils } = await client
+            .from("profils")
+            .select("id")
+            .neq("id", utilisateur.id);
+        if (erreurProfils) {
+            console.error("Erreur récupération utilisateurs pour notification générale :", erreurProfils);
+            return;
+        }
+        const notifications = (profils || []).map(function(profil) {
+            return { utilisateur_id: profil.id, type: type, titre: titre, message: message, lu: false };
+        });
+        if (!notifications.length) return;
+        const { error } = await client.from("notifications").insert(notifications);
+        if (error) console.error("Erreur notifications discussion générale :", error);
+    } catch (e) {
+        console.error("Erreur notifications discussion générale :", e);
     }
 }
 
