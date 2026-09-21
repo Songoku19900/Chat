@@ -5831,6 +5831,15 @@ async function envoyerMessagePrive(
 
         inputMessage.value = "";
 
+        if (utilisateurPriveActuel && utilisateurPriveActuel.id) {
+            await creerNotification(
+                utilisateurPriveActuel.id,
+                "message",
+                "💬 Nouveau message",
+                "@" + pseudoActuel + " t'a envoyé un message privé."
+            );
+        }
+
     }
 
 
@@ -6095,6 +6104,15 @@ async function envoyerVocalPrive(
             throw resultatMessage.error;
         }
 
+        if (utilisateurPriveActuel && utilisateurPriveActuel.id) {
+            await creerNotification(
+                utilisateurPriveActuel.id,
+                "vocal",
+                "🎙️ Nouveau vocal",
+                "@" + pseudoActuel + " t'a envoyé un vocal."
+            );
+        }
+
         statutVocal.textContent =
             "Vocal envoyé";
 
@@ -6283,6 +6301,15 @@ async function envoyerImagePrive(
 
         if (resultatMessage.error) {
             throw resultatMessage.error;
+        }
+
+        if (utilisateurPriveActuel && utilisateurPriveActuel.id) {
+            await creerNotification(
+                utilisateurPriveActuel.id,
+                "image",
+                "🖼️ Nouvelle image",
+                "@" + pseudoActuel + " t'a envoyé une image."
+            );
         }
 
         statutVocal.textContent =
@@ -8013,14 +8040,58 @@ async function sauverProfil(){
 async function etatAmis(){if(!utilisateur)return {amis:[],recues:[],envoyees:[]};let r=await client.from("demandes_amis").select("*").or(`demandeur_id.eq.${utilisateur.id},receveur_id.eq.${utilisateur.id}`);if(r.error){console.error(r.error);return {amis:[],recues:[],envoyees:[]};}let d=r.data||[],amis=d.filter(x=>x.statut==="acceptee").map(x=>String(x.demandeur_id)===String(utilisateur.id)?x.receveur_id:x.demandeur_id),recues=d.filter(x=>x.statut==="en_attente"&&String(x.receveur_id)===String(utilisateur.id)),envoyees=d.filter(x=>x.statut==="en_attente"&&String(x.demandeur_id)===String(utilisateur.id));return {amis:[...new Set(amis.map(String))],recues,envoyees};}
 async function profils(ids){if(!ids.length)return[];let r=await client.from("profils").select("id,pseudo,photo_url,couleur").in("id",ids);return r.data||[];}
 async function afficherAmisComplet(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnAmis);titrePage.textContent="👥 Mes potes";descriptionPage.textContent="Gère tes demandes et tes conversations.";listeMessages.innerHTML='<div class="message-vide">Chargement...</div>';let e=await etatAmis(),pa=await profils(e.amis),pd=await profils(e.recues.map(x=>x.demandeur_id)),all=(await client.from("profils").select("id,pseudo,photo_url,couleur").neq("id",utilisateur.id).order("pseudo")).data||[];let sent=new Set(e.envoyees.map(x=>String(x.receveur_id))),friends=new Set(e.amis);listeMessages.innerHTML=`<div class="bloc-amis"><h3>🔎 Ajouter un pote</h3><input id="findAmi" class="champ" style="margin-top:0" placeholder="Rechercher un pseudo..."><div id="resultAmi"></div></div><div class="bloc-amis"><h3>❤️ Mes potes (${pa.length})</h3><div id="mesAmis"></div></div><div class="bloc-amis"><h3>📩 Demandes reçues (${pd.length})</h3><div id="demandesRecues"></div></div>`;let ma=document.getElementById("mesAmis");if(!pa.length)ma.innerHTML='<div class="zone-demandes-vide">Tu n’as pas encore de pote.</div>';pa.forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Ton pote</div></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";b.textContent="💬 Parler";b.onclick=()=>ouvrirDiscussionPrivee(p);d.appendChild(b);ma.appendChild(d);});let dr=document.getElementById("demandesRecues");if(!pd.length)dr.innerHTML='<div class="zone-demandes-vide">Aucune demande.</div>';pd.forEach(p=>{let x=e.recues.find(q=>String(q.demandeur_id)===String(p.id)),d=document.createElement("div");d.className="carte-demande";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b><div class="statut-utilisateur">Demande de pote</div></div>`;let ok=document.createElement("button");ok.className="btn-ami-vert";ok.textContent="✓ Accepter";ok.onclick=()=>traiterDemande(x,true);let no=document.createElement("button");no.className="btn-ami-rouge";no.textContent="✕ Refuser";no.onclick=()=>traiterDemande(x,false);let a=document.createElement("div");a.className="actions-ami";a.append(ok,no);d.appendChild(a);dr.appendChild(d);});let find=document.getElementById("findAmi"),render=()=>{let q=find.value.toLowerCase(),box=document.getElementById("resultAmi");box.innerHTML="";all.filter(p=>p.pseudo.toLowerCase().includes(q)).slice(0,20).forEach(p=>{let d=document.createElement("div");d.className="carte-ami";d.innerHTML=avatarMini(p)+`<div class="infos-ami"><b>@${esc(p.pseudo)}</b></div>`;let b=document.createElement("button");b.className="btn-ami-bleu";if(friends.has(String(p.id))){b.textContent="✓ Pote";b.disabled=true;}else if(sent.has(String(p.id))){b.textContent="⏳ En attente";b.disabled=true;}else{b.textContent="➕ Ajouter";b.onclick=()=>envoyerDemande(p.id);}d.appendChild(b);box.appendChild(d);});};find.oninput=render;render();}
-async function envoyerDemande(id){let e=await etatAmis();if(e.amis.includes(String(id))||e.envoyees.some(x=>String(x.receveur_id)===String(id)))return;if(e.recues.some(x=>String(x.demandeur_id)===String(id))){return traiterDemande(e.recues.find(x=>String(x.demandeur_id)===String(id)),true);}let r=await client.from("demandes_amis").insert({demandeur_id:utilisateur.id,receveur_id:id,statut:"en_attente"});if(r.error)alert(r.error.message);else{await chargerBadgeDemandesAmis();afficherAmisComplet();}}
-async function traiterDemande(d,ok){if(!d)return;let r=await client.from("demandes_amis").update({statut:ok?"acceptee":"refusee"}).eq("id",d.id).eq("receveur_id",utilisateur.id);if(r.error)alert(r.error.message);else{await chargerBadgeDemandesAmis();afficherAmisComplet();}}
+async function envoyerDemande(id){
+    let e=await etatAmis();
+    if(e.amis.includes(String(id))||e.envoyees.some(x=>String(x.receveur_id)===String(id)))return;
+    if(e.recues.some(x=>String(x.demandeur_id)===String(id))){
+        return traiterDemande(e.recues.find(x=>String(x.demandeur_id)===String(id)),true);
+    }
+    let r=await client.from("demandes_amis").insert({demandeur_id:utilisateur.id,receveur_id:id,statut:"en_attente"});
+    if(r.error)alert(r.error.message);
+    else{
+        await creerNotification(id,"ami_demande","👥 Nouvelle demande de pote","@"+pseudoActuel+" t'a envoyé une demande de pote.");
+        await chargerBadgeDemandesAmis();
+        afficherAmisComplet();
+    }
+}
+async function traiterDemande(d,ok){
+    if(!d)return;
+    let r=await client.from("demandes_amis").update({statut:ok?"acceptee":"refusee"}).eq("id",d.id).eq("receveur_id",utilisateur.id);
+    if(r.error)alert(r.error.message);
+    else{
+        if(ok){
+            await creerNotification(d.demandeur_id,"ami_accepte","✅ Demande de pote acceptée","@"+pseudoActuel+" a accepté ta demande de pote.");
+        }
+        await chargerBadgeDemandesAmis();
+        afficherAmisComplet();
+    }
+}
 async function chargerBadgeDemandesAmis(){if(!badgeDemandesAmis||!utilisateur)return;let r=await client.from("demandes_amis").select("id",{count:"exact",head:true}).eq("receveur_id",utilisateur.id).eq("statut","en_attente");if(r.error){badgeDemandesAmis.style.display="none";return;}badgeDemandesAmis.textContent=r.count||0;badgeDemandesAmis.style.display=r.count?"inline-flex":"none";}
 function initialiserCanalAmis(){if(canalAmis||!utilisateur)return;canalAmis=client.channel("amis-"+utilisateur.id).on("postgres_changes",{event:"*",schema:"public",table:"demandes_amis"},async p=>{let d=p.new||p.old;if(!d)return;if(String(d.demandeur_id)!==String(utilisateur.id)&&String(d.receveur_id)!==String(utilisateur.id))return;await chargerBadgeDemandesAmis();if(titrePage.textContent.includes("Mes potes"))afficherAmisComplet();}).subscribe();}
 function initialiserCanalReactions(){if(canalReactions||!utilisateur)return;canalReactions=client.channel("reactions-globales").on("postgres_changes",{event:"*",schema:"public",table:"reactions_messages"},p=>{let id=p.new?.message_id||p.old?.message_id;if(!id)return;let el=document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`);if(el)chargerReactions(id,el);}).subscribe();}
 async function chargerReactions(id,bloc){let z=bloc.querySelector(".zone-reactions");if(!z)return;let r=await client.from("reactions_messages").select("reaction,utilisateur_id").eq("message_id",id);if(r.error)return;let g={};(r.data||[]).forEach(x=>(g[x.reaction]??=[]).push(x.utilisateur_id));z.querySelectorAll(".btn-reaction").forEach(b=>{let a=g[b.dataset.reaction]||[];b.classList.toggle("actif",a.some(x=>String(x)===String(utilisateur.id)));b.querySelector(".compteur-reaction").textContent=a.length||"";});}
 function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id)){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent="🗑️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type);z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
-async function basculerReaction(id,type,r,bloc){let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();let e=q.data?(await client.from("reactions_messages").delete().eq("id",q.data.id)).error:(await client.from("reactions_messages").insert({message_id:id,type_message:type,utilisateur_id:utilisateur.id,reaction:r})).error;if(e)alert(e.message);else chargerReactions(id,bloc);}
+async function basculerReaction(id,type,r,bloc){
+    let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();
+    if(q.data){
+        let e=(await client.from("reactions_messages").delete().eq("id",q.data.id)).error;
+        if(e)alert(e.message);
+        else chargerReactions(id,bloc);
+        return;
+    }
+    let e=(await client.from("reactions_messages").insert({message_id:id,type_message:type,utilisateur_id:utilisateur.id,reaction:r})).error;
+    if(e){
+        alert(e.message);
+        return;
+    }
+    let table=type==="public"?"messages":"messages_prives";
+    let col=type==="public"?"utilisateur_id":"auteur_id";
+    let auteur=(await client.from(table).select(col).eq("id",id).maybeSingle()).data?.[col];
+    if(auteur && String(auteur)!==String(utilisateur.id)){
+        await creerNotification(auteur,"reaction","❤️ Nouvelle réaction","@"+pseudoActuel+" a réagi à ton message avec "+r+".");
+    }
+    chargerReactions(id,bloc);
+}
 async function supprimerMessage(id,type){
     if(!confirm("Supprimer ce message ?")) return;
 
@@ -8305,6 +8376,24 @@ function echapperNotification(texte) {
         .replace(/'/g, "&#039;");
 }
 
+
+async function creerNotification(utilisateurId, type, titre, message = "") {
+    if (!utilisateurId || !client) return;
+    try {
+        const { error } = await client
+            .from("notifications")
+            .insert({
+                utilisateur_id: utilisateurId,
+                type: type,
+                titre: titre,
+                message: message,
+                lu: false
+            });
+        if (error) console.error("Erreur création notification :", error);
+    } catch (e) {
+        console.error("Erreur création notification :", e);
+    }
+}
 
 async function chargerNotifications() {
 
