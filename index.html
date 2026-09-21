@@ -1840,6 +1840,152 @@ header {
 .carte-profil{display:flex;align-items:center;gap:16px}.grand-avatar{width:82px;height:82px;min-width:82px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);color:#fff;font-size:30px;font-weight:bold}.grand-avatar img,.avatar-mini img{width:100%;height:100%;object-fit:cover}.profil-actions,.actions-ami{display:flex;gap:8px;flex-wrap:wrap}.profil-actions button,.actions-ami button{min-height:40px;padding:8px 12px;border-radius:10px;font-weight:bold}.btn-profil-save,.btn-ami-bleu{background:var(--primaire);color:#fff}.btn-profil-secondaire{background:var(--primaire-clair);color:var(--primaire)}.btn-ami-vert{background:var(--vert);color:#fff}.btn-ami-rouge{background:var(--rouge-clair);color:var(--rouge)}.carte-ami,.carte-demande{display:flex;align-items:center;gap:12px;padding:12px;margin-top:9px;border:1px solid var(--bordure);border-radius:12px;background:#fff}.infos-ami{flex:1;min-width:0}.avatar-mini{width:44px;height:44px;min-width:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);font-weight:bold}.zone-demandes-vide{padding:8px 0;color:var(--texte-secondaire)}.actions-message{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.btn-reaction{min-width:30px;min-height:30px;padding:3px 7px;border-radius:999px;background:#f8fafc;border:1px solid var(--bordure);font-size:15px}.btn-reaction.actif{background:var(--primaire-clair);border-color:#a5b4fc}.compteur-reaction{font-size:12px;font-weight:bold;color:var(--texte-secondaire)}.btn-supprimer-message{margin-left:auto;min-height:30px;padding:4px 8px;border-radius:8px;background:var(--rouge-clair);color:var(--rouge);font-size:11px;font-weight:bold}.indicateur-ecrit{min-height:22px;padding:2px 14px 5px;color:var(--texte-secondaire);font-size:12px;font-style:italic}.color-picker{width:58px;height:42px;border:1px solid var(--bordure);border-radius:10px;background:#fff}
 @media(max-width:600px){.carte-profil{align-items:flex-start;flex-direction:column}.actions-ami{width:100%}.actions-ami button{flex:1}}
 
+
+
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
+
+.notifications-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+#btnNotifications {
+    position: relative;
+    padding: 9px 14px;
+    background: var(--primaire-clair);
+    color: var(--primaire);
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+#btnNotifications:hover {
+    background: #e0e7ff;
+}
+
+#badgeNotifications {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #ef4444;
+    color: white;
+    border: 2px solid white;
+    font-size: 10px;
+    line-height: 1;
+}
+
+#panneauNotifications {
+    position: fixed;
+    top: 76px;
+    right: 20px;
+    width: 360px;
+    max-width: calc(100vw - 30px);
+    max-height: 520px;
+    display: none;
+    overflow: hidden;
+    background: white;
+    border: 1px solid var(--bordure);
+    border-radius: 16px;
+    box-shadow: 0 15px 45px rgba(15, 23, 42, 0.22);
+    z-index: 99999;
+}
+
+#panneauNotifications.visible {
+    display: block;
+}
+
+.notifications-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 15px;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.notifications-header h3 {
+    margin: 0;
+    font-size: 17px;
+}
+
+#btnToutLire {
+    padding: 6px 8px;
+    background: transparent;
+    color: var(--primaire);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+#btnToutLire:hover {
+    background: var(--primaire-clair);
+    border-radius: 8px;
+}
+
+#listeNotifications {
+    max-height: 445px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 13px 15px;
+    border-bottom: 1px solid #eef2f7;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.notification-item:hover {
+    background: #f8fafc;
+}
+
+.notification-item.non-lue {
+    background: #eef2ff;
+}
+
+.notification-titre {
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.notification-message {
+    color: var(--texte-secondaire);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.notification-date {
+    margin-top: 6px;
+    color: var(--gris);
+    font-size: 10px;
+}
+
+.notifications-vide {
+    padding: 35px 15px;
+    color: var(--texte-secondaire);
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    #panneauNotifications {
+        top: 72px;
+        right: 10px;
+        width: calc(100vw - 20px);
+    }
+
+    #btnNotifications {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+
 </style>
 
 </head>
@@ -1926,6 +2072,22 @@ header {
         </span>
 
     </div>
+
+
+
+    <div class="notifications-wrapper">
+
+        <button
+            id="btnNotifications"
+            type="button"
+            aria-label="Notifications"
+        >
+            🔔 Notifications
+            <span id="badgeNotifications">0</span>
+        </button>
+
+    </div>
+
 
     <button
         class="btn-deconnexion"
@@ -2079,6 +2241,37 @@ header {
 
 </section>
 
+
+
+
+<!-- ========================================================
+     PANNEAU NOTIFICATIONS
+========================================================= -->
+
+<div id="panneauNotifications">
+
+    <div class="notifications-header">
+
+        <h3>🔔 Notifications</h3>
+
+        <button
+            id="btnToutLire"
+            type="button"
+        >
+            Tout lire
+        </button>
+
+    </div>
+
+    <div id="listeNotifications">
+
+        <div class="notifications-vide">
+            Aucune notification
+        </div>
+
+    </div>
+
+</div>
 
 <script>
 
@@ -2629,6 +2822,8 @@ async function ouvrirApplication(profil) {
     await initialiserEcouteMorpion();
 
     initialiserFonctionsSociales();
+
+    initialiserNotifications();
 
     afficherAccueil();
 
@@ -8084,6 +8279,298 @@ async function verifierConnexionSauvegardee() {
 
     }
 
+}
+
+
+
+
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
+
+let canalNotifications = null;
+
+
+function echapperNotification(texte) {
+
+    if (texte === null || texte === undefined) {
+        return "";
+    }
+
+    return String(texte)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+async function chargerNotifications() {
+
+    if (!utilisateur || !utilisateur.id) {
+        return;
+    }
+
+    const { data, error } = await client
+        .from("notifications")
+        .select("*")
+        .eq("utilisateur_id", utilisateur.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+    if (error) {
+        console.error("Erreur chargement notifications :", error);
+        return;
+    }
+
+    afficherNotifications(data || []);
+}
+
+
+function afficherNotifications(notifications) {
+
+    const liste = document.getElementById("listeNotifications");
+    const badge = document.getElementById("badgeNotifications");
+
+    if (!liste || !badge) {
+        return;
+    }
+
+    const nonLues = notifications.filter(function(notification) {
+        return !notification.lu;
+    }).length;
+
+    if (nonLues > 0) {
+        badge.textContent = nonLues > 99 ? "99+" : String(nonLues);
+        badge.style.display = "flex";
+    } else {
+        badge.style.display = "none";
+    }
+
+    if (!notifications.length) {
+
+        liste.innerHTML = `
+            <div class="notifications-vide">
+                Aucune notification
+            </div>
+        `;
+
+        return;
+    }
+
+    liste.innerHTML = notifications.map(function(notification) {
+
+        const date = new Date(notification.created_at);
+
+        let dateTexte = date.toLocaleString("fr-FR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+        return `
+            <div
+                class="notification-item ${notification.lu ? "" : "non-lue"}"
+                data-notification-id="${echapperNotification(notification.id)}"
+            >
+                <div class="notification-titre">
+                    ${echapperNotification(notification.titre)}
+                </div>
+
+                ${notification.message ? `
+                    <div class="notification-message">
+                        ${echapperNotification(notification.message)}
+                    </div>
+                ` : ""}
+
+                <div class="notification-date">
+                    ${dateTexte}
+                </div>
+            </div>
+        `;
+
+    }).join("");
+
+    liste.querySelectorAll(".notification-item").forEach(function(element) {
+
+        element.addEventListener("click", async function() {
+
+            const id = this.dataset.notificationId;
+
+            await marquerNotificationLue(id);
+
+        });
+
+    });
+}
+
+
+async function marquerNotificationLue(id) {
+
+    if (!utilisateur || !utilisateur.id) {
+        return;
+    }
+
+    const { error } = await client
+        .from("notifications")
+        .update({ lu: true })
+        .eq("id", id)
+        .eq("utilisateur_id", utilisateur.id);
+
+    if (error) {
+        console.error("Erreur lecture notification :", error);
+        return;
+    }
+
+    await chargerNotifications();
+}
+
+
+async function marquerToutesNotificationsLues() {
+
+    if (!utilisateur || !utilisateur.id) {
+        return;
+    }
+
+    const { error } = await client
+        .from("notifications")
+        .update({ lu: true })
+        .eq("utilisateur_id", utilisateur.id)
+        .eq("lu", false);
+
+    if (error) {
+        console.error("Erreur marquage notifications :", error);
+        return;
+    }
+
+    await chargerNotifications();
+}
+
+
+function initialiserBoutonNotifications() {
+
+    const bouton = document.getElementById("btnNotifications");
+    const panneau = document.getElementById("panneauNotifications");
+    const btnToutLire = document.getElementById("btnToutLire");
+
+    if (!bouton || !panneau) {
+        return;
+    }
+
+    if (bouton.dataset.notificationsInitialise === "1") {
+        return;
+    }
+
+    bouton.dataset.notificationsInitialise = "1";
+
+    bouton.addEventListener("click", function(event) {
+
+        event.stopPropagation();
+
+        panneau.classList.toggle("visible");
+
+        if (panneau.classList.contains("visible")) {
+            chargerNotifications();
+        }
+
+    });
+
+    panneau.addEventListener("click", function(event) {
+        event.stopPropagation();
+    });
+
+    document.addEventListener("click", function() {
+        panneau.classList.remove("visible");
+    });
+
+    if (btnToutLire && btnToutLire.dataset.notificationsInitialise !== "1") {
+
+        btnToutLire.dataset.notificationsInitialise = "1";
+
+        btnToutLire.addEventListener("click", async function() {
+            await marquerToutesNotificationsLues();
+        });
+
+    }
+}
+
+
+function initialiserRealtimeNotifications() {
+
+    if (!utilisateur || !utilisateur.id) {
+        return;
+    }
+
+    if (canalNotifications) {
+        try {
+            client.removeChannel(canalNotifications);
+        } catch (error) {
+            console.error(error);
+        }
+
+        canalNotifications = null;
+    }
+
+    canalNotifications = client
+        .channel("notifications-" + String(utilisateur.id))
+        .on(
+            "postgres_changes",
+            {
+                event: "INSERT",
+                schema: "public",
+                table: "notifications",
+                filter: "utilisateur_id=eq." + String(utilisateur.id)
+            },
+            function(payload) {
+
+                console.log("🔔 Nouvelle notification", payload.new);
+
+                chargerNotifications();
+
+            }
+        )
+        .on(
+            "postgres_changes",
+            {
+                event: "UPDATE",
+                schema: "public",
+                table: "notifications",
+                filter: "utilisateur_id=eq." + String(utilisateur.id)
+            },
+            function() {
+                chargerNotifications();
+            }
+        )
+        .on(
+            "postgres_changes",
+            {
+                event: "DELETE",
+                schema: "public",
+                table: "notifications",
+                filter: "utilisateur_id=eq." + String(utilisateur.id)
+            },
+            function() {
+                chargerNotifications();
+            }
+        )
+        .subscribe(function(status) {
+            console.log("Canal notifications :", status);
+        });
+}
+
+
+function initialiserNotifications() {
+
+    if (!utilisateur || !utilisateur.id) {
+        return;
+    }
+
+    initialiserBoutonNotifications();
+    chargerNotifications();
+    initialiserRealtimeNotifications();
 }
 
 
