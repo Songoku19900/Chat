@@ -41,6 +41,30 @@
 
 
 /* =========================================================
+   GRADES ET MODERATION
+========================================================= */
+.badge-grade {
+    display:inline-flex; align-items:center; gap:5px; margin-left:6px;
+    padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold;
+    background:#eef2ff; color:#4338ca; vertical-align:middle;
+}
+.badge-grade.chef { background:#f3e8ff; color:#7e22ce; }
+.badge-grade.admin { background:#dbeafe; color:#1d4ed8; }
+.badge-grade.fondateur { background:#fef3c7; color:#92400e; }
+.carte-moderation {
+    background:white; border:1px solid var(--bordure); border-radius:16px;
+    padding:20px; box-shadow:var(--ombre);
+}
+.carte-moderation h3 { margin-top:0; }
+.modo-ligne { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+.modo-ligne .champ { margin-top:0; flex:1; min-width:180px; }
+.btn-danger-modo { padding:11px 15px; background:#dc2626; color:white; border-radius:10px; font-weight:bold; }
+.btn-admin-modo { padding:11px 15px; background:#4f46e5; color:white; border-radius:10px; font-weight:bold; }
+.ligne-moderation { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--bordure); }
+.ligne-moderation:last-child { border-bottom:0; }
+.grade-connecte { color:var(--texte-secondaire); font-size:12px; }
+
+/* =========================================================
    BASE
 ========================================================= */
 
@@ -2140,6 +2164,12 @@ header {
         </button>
 
 
+        <button id="btnModeration" style="display:none;">
+            <span>🛡️</span>
+            <span>Modération</span>
+        </button>
+
+
         <div class="menu-separation"></div>
 
 
@@ -2300,6 +2330,33 @@ const client =
 let utilisateur = null;
 
 let pseudoActuel = "";
+
+let gradeActuel = "arrivant";
+const GRADES = {
+    arrivant: { nom: "Arrivant", emoji: "👤" },
+    membre: { nom: "Membre", emoji: "🟢" },
+    admin: { nom: "Admin", emoji: "🔵" },
+    chef: { nom: "Chef", emoji: "🟣" },
+    fondateur: { nom: "Fondateur", emoji: "👑" }
+};
+
+function niveauGrade(grade) {
+    return { arrivant:1, membre:2, admin:3, chef:4, fondateur:5 }[grade] || 1;
+}
+function estAdmin() { return niveauGrade(gradeActuel) >= 3; }
+function estChef() { return niveauGrade(gradeActuel) >= 4; }
+function estFondateur() { return niveauGrade(gradeActuel) >= 5; }
+function nomGrade(grade) {
+    const g = GRADES[grade] || GRADES.arrivant;
+    return g.emoji + " " + g.nom;
+}
+function creerBadgeGrade(grade) {
+    const badge = document.createElement("span");
+    badge.className = "badge-grade " + String(grade || "arrivant");
+    badge.textContent = nomGrade(grade);
+    return badge;
+}
+
 
 let canalMessages = null;
 
@@ -2496,6 +2553,9 @@ const btnAmis =
 const btnJeux =
     document.getElementById("btnJeux");
 
+const btnModeration =
+    document.getElementById("btnModeration");
+
 
 /* =========================================================
    MESSAGES D'INFORMATION
@@ -2637,7 +2697,9 @@ async function inscrire() {
 
             pseudo: pseudo,
 
-            code: code
+            code: code,
+
+            grade: "arrivant"
 
         });
 
@@ -2769,6 +2831,11 @@ async function connecter() {
         return;
     }
 
+    if (profil.banni_jusqu_a && new Date(profil.banni_jusqu_a) > new Date()) {
+        afficherErreur("🚫 Ton compte est banni jusqu'au " + new Date(profil.banni_jusqu_a).toLocaleString("fr-FR") + ".");
+        btnConnexion.disabled = false;
+        return;
+    }
 
     await ouvrirApplication(profil);
 
@@ -2786,6 +2853,11 @@ async function ouvrirApplication(profil) {
     utilisateur = profil;
 
     pseudoActuel = profil.pseudo;
+    gradeActuel = profil.grade || "arrivant";
+
+    if (btnModeration) {
+        btnModeration.style.display = estAdmin() ? "flex" : "none";
+    }
 
 
     localStorage.setItem(
@@ -2800,8 +2872,8 @@ async function ouvrirApplication(profil) {
     );
 
 
-    monPseudo.textContent =
-        "@" + pseudoActuel;
+    monPseudo.innerHTML = "@" + pseudoActuel + " ";
+    monPseudo.appendChild(creerBadgeGrade(gradeActuel));
 
 
     connexion.style.display =
@@ -3656,6 +3728,10 @@ function afficherMessage(message) {
     nom.textContent = "@" + message.pseudo;
     bloc.appendChild(nom);
 
+    if (message.grade) {
+        nom.appendChild(creerBadgeGrade(message.grade));
+    }
+
     if (message.type_message === "image" && message.image_url) {
         const image = document.createElement("img");
         image.className = "image-privee";
@@ -3772,6 +3848,9 @@ async function envoyerMessage() {
             pseudo:
                 pseudoActuel,
 
+            grade:
+                gradeActuel,
+
             contenu:
                 contenu,
 
@@ -3794,12 +3873,6 @@ async function envoyerMessage() {
 
         inputMessage.value = "";
 
-        await creerNotificationsDiscussionGenerale(
-            "discussion_generale",
-            "💬 Nouveau message dans la discussion générale",
-            "@" + pseudoActuel + " a envoyé un message dans la discussion générale."
-        );
-
     }
 
 
@@ -3807,6 +3880,115 @@ async function envoyerMessage() {
 
 }
 
+
+/* =========================================================
+   MODERATION
+========================================================= */
+
+async function afficherModeration() {
+    if (!estAdmin()) return;
+
+    titrePage.textContent = "🛡️ Modération";
+    descriptionPage.textContent = "Gestion des messages, des bannissements et des grades.";
+    zoneEnvoi.style.display = "none";
+
+    const { data: profils, error } = await client
+        .from("profils")
+        .select("id, pseudo, grade, banni_jusqu_a")
+        .order("pseudo", { ascending: true });
+
+    if (error) {
+        listeMessages.innerHTML = '<div class="message-vide">Impossible de charger la modération : ' + error.message + '</div>';
+        return;
+    }
+
+    const autres = (profils || []).filter(p => String(p.id) !== String(utilisateur.id));
+
+    listeMessages.innerHTML = `
+        <div class="carte-moderation">
+            <h3>🛡️ Centre de modération</h3>
+            <p>Ton grade : <strong>${nomGrade(gradeActuel)}</strong></p>
+            <div class="modo-ligne">
+                <select class="champ" id="modoUtilisateur">
+                    <option value="">Choisir un utilisateur...</option>
+                    ${autres.map(p => `<option value="${p.id}">@${p.pseudo} — ${nomGrade(p.grade || "arrivant")}</option>`).join("")}
+                </select>
+            </div>
+            <div class="modo-ligne">
+                <select class="champ" id="modoDuree">
+                    <option value="1">1 heure</option>
+                    <option value="24">24 heures</option>
+                    <option value="168">7 jours</option>
+                    <option value="720">30 jours</option>
+                    <option value="0">Débannir</option>
+                </select>
+                <button class="btn-danger-modo" id="btnBannirUtilisateur">🚫 Bannir</button>
+            </div>
+            ${estChef() ? `
+            <div class="modo-ligne">
+                <select class="champ" id="modoGrade">
+                    <option value="arrivant">👤 Arrivant</option>
+                    <option value="membre">🟢 Membre</option>
+                    <option value="admin">🔵 Admin</option>
+                    <option value="chef">🟣 Chef</option>
+                    ${estFondateur() ? '<option value="fondateur">👑 Fondateur</option>' : ''}
+                </select>
+                <button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button>
+            </div>` : '<p class="grade-connecte">Seuls les Chefs peuvent gérer les grades.</p>'}
+            <div id="listeModeration"></div>
+        </div>`;
+
+    document.getElementById("btnBannirUtilisateur").onclick = () => modererBannissement();
+    if (document.getElementById("btnChangerGrade")) document.getElementById("btnChangerGrade").onclick = () => changerGradeModeration();
+
+    const zone = document.getElementById("listeModeration");
+    autres.forEach(p => {
+        const ligne = document.createElement("div");
+        ligne.className = "ligne-moderation";
+        const statut = p.banni_jusqu_a && new Date(p.banni_jusqu_a) > new Date()
+            ? "🚫 Banni jusqu'au " + new Date(p.banni_jusqu_a).toLocaleString("fr-FR")
+            : "✅ Actif";
+        ligne.innerHTML = `<div><strong>@${p.pseudo}</strong><div class="grade-connecte">${nomGrade(p.grade || "arrivant")} · ${statut}</div></div>`;
+        zone.appendChild(ligne);
+    });
+}
+
+async function modererBannissement() {
+    if (!estChef()) {
+        alert("Seuls les Chefs et Fondateurs peuvent bannir.");
+        return;
+    }
+    const id = document.getElementById("modoUtilisateur")?.value;
+    const heures = Number(document.getElementById("modoDuree")?.value);
+    if (!id) { alert("Choisis un utilisateur."); return; }
+
+    const cible = (await client.from("profils").select("pseudo, grade").eq("id", id).maybeSingle()).data;
+    if (!cible) { alert("Utilisateur introuvable."); return; }
+    if (niveauGrade(cible.grade) >= niveauGrade(gradeActuel)) { alert("Tu ne peux pas bannir un utilisateur ayant un grade égal ou supérieur au tien."); return; }
+
+    const jusqu = heures === 0 ? null : new Date(Date.now() + heures * 3600000).toISOString();
+    const { error } = await client.from("profils").update({ banni_jusqu_a: jusqu, banni_par: utilisateur.id }).eq("id", id);
+    if (error) { alert("Impossible de modifier le bannissement : " + error.message); return; }
+    alert(heures === 0 ? "Utilisateur débanni." : "Utilisateur banni.");
+    afficherModeration();
+}
+
+async function changerGradeModeration() {
+    if (!estChef()) return;
+    const id = document.getElementById("modoUtilisateur")?.value;
+    const grade = document.getElementById("modoGrade")?.value;
+    if (!id) { alert("Choisis un utilisateur."); return; }
+    const cible = (await client.from("profils").select("pseudo, grade").eq("id", id).maybeSingle()).data;
+    if (!cible) return;
+    if (grade === "fondateur" && !estFondateur()) { alert("Seul le Fondateur peut donner le grade Fondateur."); return; }
+    if (niveauGrade(cible.grade) >= niveauGrade(gradeActuel) || niveauGrade(grade) >= niveauGrade(gradeActuel)) {
+        alert("Tu ne peux pas gérer un grade égal ou supérieur au tien."); return;
+    }
+    const { error } = await client.from("profils").update({ grade }).eq("id", id);
+    if (error) { alert("Impossible de changer le grade : " + error.message); return; }
+    alert("Grade modifié.");
+    afficherModeration();
+}
 
 /* =========================================================
    TEMPS REEL PUBLIC
@@ -3892,6 +4074,8 @@ btnAccueil.addEventListener(
     afficherAccueil
 );
 
+
+if (btnModeration) btnModeration.addEventListener("click", afficherModeration);
 
 async function afficherAccueil() {
 
@@ -5893,12 +6077,6 @@ async function envoyerVocalPublic(blob) {
 
         if (error) throw error;
 
-        await creerNotificationsDiscussionGenerale(
-            "discussion_generale",
-            "🎙️ Nouveau vocal dans la discussion générale",
-            "@" + pseudoActuel + " a envoyé un vocal dans la discussion générale."
-        );
-
         statutVocal.textContent = "Vocal envoyé";
         setTimeout(function() { statutVocal.textContent = ""; }, 1500);
 
@@ -6225,12 +6403,6 @@ async function envoyerImagePrive(
                 });
 
             if (error) throw error;
-
-            await creerNotificationsDiscussionGenerale(
-                "discussion_generale",
-                "🖼️ Nouvelle image dans la discussion générale",
-                "@" + pseudoActuel + " a envoyé une image dans la discussion générale."
-            );
 
             statutVocal.textContent = "Image envoyée";
             setTimeout(function() { statutVocal.textContent = ""; }, 1500);
@@ -8088,7 +8260,7 @@ async function chargerBadgeDemandesAmis(){if(!badgeDemandesAmis||!utilisateur)re
 function initialiserCanalAmis(){if(canalAmis||!utilisateur)return;canalAmis=client.channel("amis-"+utilisateur.id).on("postgres_changes",{event:"*",schema:"public",table:"demandes_amis"},async p=>{let d=p.new||p.old;if(!d)return;if(String(d.demandeur_id)!==String(utilisateur.id)&&String(d.receveur_id)!==String(utilisateur.id))return;await chargerBadgeDemandesAmis();if(titrePage.textContent.includes("Mes potes"))afficherAmisComplet();}).subscribe();}
 function initialiserCanalReactions(){if(canalReactions||!utilisateur)return;canalReactions=client.channel("reactions-globales").on("postgres_changes",{event:"*",schema:"public",table:"reactions_messages"},p=>{let id=p.new?.message_id||p.old?.message_id;if(!id)return;let el=document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`);if(el)chargerReactions(id,el);}).subscribe();}
 async function chargerReactions(id,bloc){let z=bloc.querySelector(".zone-reactions");if(!z)return;let r=await client.from("reactions_messages").select("reaction,utilisateur_id").eq("message_id",id);if(r.error)return;let g={};(r.data||[]).forEach(x=>(g[x.reaction]??=[]).push(x.utilisateur_id));z.querySelectorAll(".btn-reaction").forEach(b=>{let a=g[b.dataset.reaction]||[];b.classList.toggle("actif",a.some(x=>String(x)===String(utilisateur.id)));b.querySelector(".compteur-reaction").textContent=a.length||"";});}
-function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id)){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent="🗑️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type);z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
+function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id) || estAdmin()){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent=String(auteur)===String(utilisateur.id)?"🗑️ Supprimer":"🛡️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type,estAdmin() && String(auteur)!==String(utilisateur.id));z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
 async function basculerReaction(id,type,r,bloc){
     let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();
     if(q.data){
@@ -8110,8 +8282,8 @@ async function basculerReaction(id,type,r,bloc){
     }
     chargerReactions(id,bloc);
 }
-async function supprimerMessage(id,type){
-    if(!confirm("Supprimer ce message ?")) return;
+async function supprimerMessage(id,type,forceModeration=false){
+    if(!confirm(forceModeration ? "Supprimer ce message au titre de la modération ?" : "Supprimer ce message ?")) return;
 
     const table = type === "public" ? "messages" : "messages_prives";
     const col = type === "public" ? "utilisateur_id" : "auteur_id";
@@ -8120,7 +8292,7 @@ async function supprimerMessage(id,type){
         .from(table)
         .delete()
         .eq("id", id)
-        .eq(col, utilisateur.id);
+        .eq(forceModeration ? "id" : col, forceModeration ? id : utilisateur.id);
 
     if(r.error){
         alert("Impossible de supprimer : " + r.error.message);
@@ -8410,28 +8582,6 @@ async function creerNotification(utilisateurId, type, titre, message = "") {
         if (error) console.error("Erreur création notification :", error);
     } catch (e) {
         console.error("Erreur création notification :", e);
-    }
-}
-
-async function creerNotificationsDiscussionGenerale(type, titre, message) {
-    if (!utilisateur || !client) return;
-    try {
-        const { data: profils, error: erreurProfils } = await client
-            .from("profils")
-            .select("id")
-            .neq("id", utilisateur.id);
-        if (erreurProfils) {
-            console.error("Erreur récupération utilisateurs pour notification générale :", erreurProfils);
-            return;
-        }
-        const notifications = (profils || []).map(function(profil) {
-            return { utilisateur_id: profil.id, type: type, titre: titre, message: message, lu: false };
-        });
-        if (!notifications.length) return;
-        const { error } = await client.from("notifications").insert(notifications);
-        if (error) console.error("Erreur notifications discussion générale :", error);
-    } catch (e) {
-        console.error("Erreur notifications discussion générale :", e);
     }
 }
 
