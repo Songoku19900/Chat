@@ -2334,8 +2334,8 @@ let pseudoActuel = "";
 let gradeActuel = "arrivant";
 const GRADES = {
     arrivant: { nom: "Arrivant", emoji: "👤" },
-    membre: { nom: "Membre", emoji: "🟢" },
-    admin: { nom: "Admin", emoji: "🔵" },
+    membre: { nom: "Membre", emoji: "👨‍🎓" },
+    admin: { nom: "Admin", emoji: "👮‍♂️" },
     chef: { nom: "Chef", emoji: "🟣" },
     fondateur: { nom: "Fondateur", emoji: "👑" }
 };
@@ -3928,9 +3928,10 @@ async function afficherModeration() {
             <div class="modo-ligne">
                 <select class="champ" id="modoGrade">
                     <option value="arrivant">👤 Arrivant</option>
-                    <option value="membre">🟢 Membre</option>
-                    <option value="admin">🔵 Admin</option>
+                    <option value="membre">👨‍🎓 Membre</option>
+                    <option value="admin">👮‍♂️ Admin</option>
                     <option value="chef">🟣 Chef</option>
+                    ---" }
                     ${estFondateur() ? '<option value="fondateur">👑 Fondateur</option>' : ''}
                 </select>
                 <button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button>
