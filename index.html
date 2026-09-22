@@ -1861,7 +1861,7 @@ header {
 }
 
 .carte-profil,.profil-formulaire,.bloc-amis{padding:18px;margin-bottom:18px;background:#fff;border:1px solid var(--bordure);border-radius:16px;box-shadow:var(--ombre)}
-.carte-profil{display:flex;align-items:center;gap:16px}.grand-avatar{width:82px;height:82px;min-width:82px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);color:#fff;font-size:30px;font-weight:bold}.grand-avatar img,.avatar-mini img{width:100%;height:100%;object-fit:cover}.profil-actions,.actions-ami{display:flex;gap:8px;flex-wrap:wrap}.profil-actions button,.actions-ami button{min-height:40px;padding:8px 12px;border-radius:10px;font-weight:bold}.btn-profil-save,.btn-ami-bleu{background:var(--primaire);color:#fff}.btn-profil-secondaire{background:var(--primaire-clair);color:var(--primaire)}.btn-ami-vert{background:var(--vert);color:#fff}.btn-ami-rouge{background:var(--rouge-clair);color:var(--rouge)}.carte-ami,.carte-demande{display:flex;align-items:center;gap:12px;padding:12px;margin-top:9px;border:1px solid var(--bordure);border-radius:12px;background:#fff}.infos-ami{flex:1;min-width:0}.avatar-mini{width:44px;height:44px;min-width:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);font-weight:bold}.zone-demandes-vide{padding:8px 0;color:var(--texte-secondaire)}.actions-message{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.btn-reaction{min-width:30px;min-height:30px;padding:3px 7px;border-radius:999px;background:#f8fafc;border:1px solid var(--bordure);font-size:15px}.btn-reaction.actif{background:var(--primaire-clair);border-color:#a5b4fc}.compteur-reaction{font-size:12px;font-weight:bold;color:var(--texte-secondaire)}.btn-supprimer-message{margin-left:auto;min-height:30px;padding:4px 8px;border-radius:8px;background:var(--rouge-clair);color:var(--rouge);font-size:11px;font-weight:bold}.indicateur-ecrit{min-height:22px;padding:2px 14px 5px;color:var(--texte-secondaire);font-size:12px;font-style:italic}.color-picker{width:58px;height:42px;border:1px solid var(--bordure);border-radius:10px;background:#fff}
+.carte-profil{display:flex;align-items:center;gap:16px}.grand-avatar{width:82px;height:82px;min-width:82px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);color:#fff;font-size:30px;font-weight:bold}.grand-avatar img,.avatar-mini img{width:100%;height:100%;object-fit:cover}.profil-actions,.actions-ami{display:flex;gap:8px;flex-wrap:wrap}.profil-actions button,.actions-ami button{min-height:40px;padding:8px 12px;border-radius:10px;font-weight:bold}.btn-profil-save,.btn-ami-bleu{background:var(--primaire);color:#fff}.btn-profil-secondaire{background:var(--primaire-clair);color:var(--primaire)}.btn-ami-vert{background:var(--vert);color:#fff}.btn-ami-rouge{background:var(--rouge-clair);color:var(--rouge)}.carte-ami,.carte-demande{display:flex;align-items:center;gap:12px;padding:12px;margin-top:9px;border:1px solid var(--bordure);border-radius:12px;background:#fff}.infos-ami{flex:1;min-width:0}.avatar-mini{width:44px;height:44px;min-width:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--primaire-clair);font-weight:bold}.zone-demandes-vide{padding:8px 0;color:var(--texte-secondaire)}.actions-message{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.btn-reaction{min-width:30px;min-height:30px;padding:3px 7px;border-radius:999px;background:#f8fafc;border:1px solid var(--bordure);font-size:15px}.btn-reaction.actif{background:var(--primaire-clair);border-color:#a5b4fc}.compteur-reaction{font-size:12px;font-weight:bold;color:var(--texte-secondaire)}.btn-supprimer-message{margin-left:auto;min-height:30px;padding:4px 8px;border-radius:8px;background:var(--rouge-clair);color:var(--rouge);font-size:11px;font-weight:bold}.btn-avertir-message{min-height:30px;padding:4px 8px;border-radius:8px;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:bold}.indicateur-ecrit{min-height:22px;padding:2px 14px 5px;color:var(--texte-secondaire);font-size:12px;font-style:italic}.color-picker{width:58px;height:42px;border:1px solid var(--bordure);border-radius:10px;background:#fff}
 @media(max-width:600px){.carte-profil{align-items:flex-start;flex-direction:column}.actions-ami{width:100%}.actions-ami button{flex:1}}
 
 
@@ -3934,7 +3934,7 @@ async function afficherModeration() {
     if (!estAdmin()) return;
 
     titrePage.textContent = "🛡️ Modération";
-    descriptionPage.textContent = "Gestion des messages, des bannissements et des grades.";
+    descriptionPage.textContent = "Admin : avertir et supprimer des messages · Chef : + bannir · Fondateur : + gérer les grades.";
     zoneEnvoi.style.display = "none";
 
     const { data: profils, error } = await client
@@ -3979,7 +3979,7 @@ async function afficherModeration() {
                     ${estFondateur() ? '<option value="fondateur">👑 Fondateur</option>' : ''}
                 </select>
                 <button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button>
-            </div>` : '<p class="grade-connecte">Seuls les Chefs peuvent gérer les grades.</p>'}
+            </div>` : '<p class="grade-connecte">Les Admins peuvent avertir et supprimer des messages. Les Chefs peuvent en plus bannir. Le Fondateur peut en plus gérer les grades.</p>'}
             <div id="listeModeration"></div>
         </div>`;
 
@@ -4033,6 +4033,54 @@ async function changerGradeModeration() {
     if (error) { alert("Impossible de changer le grade : " + error.message); return; }
     alert("Grade modifié.");
     afficherModeration();
+}
+
+async function avertirUtilisateur(utilisateurId, messageId, type) {
+    if (!estAdmin()) {
+        alert("Seuls les Admins, Chefs et Fondateurs peuvent avertir.");
+        return;
+    }
+
+    if (!utilisateurId || String(utilisateurId) === String(utilisateur.id)) {
+        alert("Tu ne peux pas t'avertir toi-même.");
+        return;
+    }
+
+    const { data: cible, error: erreurCible } = await client
+        .from("profils")
+        .select("pseudo, grade")
+        .eq("id", utilisateurId)
+        .maybeSingle();
+
+    if (erreurCible || !cible) {
+        alert("Utilisateur introuvable.");
+        return;
+    }
+
+    const confirmation = confirm(
+        "Envoyer un avertissement à @" + cible.pseudo + " pour ce message ?\n\n" +
+        "Notification : message inapproprié et non-respect des règles du Chat."
+    );
+
+    if (!confirmation) return;
+
+    const { error: erreurNotification } = await client
+        .from("notifications")
+        .insert({
+            utilisateur_id: utilisateurId,
+            type: "avertissement",
+            titre: "⚠️ Avertissement de modération",
+            message: "Tu as reçu un avertissement car un de tes messages a été considéré comme inapproprié. Merci de respecter les règles du Chat.",
+            lu: false
+        });
+
+    if (erreurNotification) {
+        console.error("Erreur avertissement :", erreurNotification);
+        alert("Impossible d'envoyer l'avertissement : " + erreurNotification.message);
+        return;
+    }
+
+    alert("Avertissement envoyé à @" + cible.pseudo + ".");
 }
 
 /* =========================================================
@@ -8345,7 +8393,7 @@ async function chargerBadgeDemandesAmis(){if(!badgeDemandesAmis||!utilisateur)re
 function initialiserCanalAmis(){if(canalAmis||!utilisateur)return;canalAmis=client.channel("amis-"+utilisateur.id).on("postgres_changes",{event:"*",schema:"public",table:"demandes_amis"},async p=>{let d=p.new||p.old;if(!d)return;if(String(d.demandeur_id)!==String(utilisateur.id)&&String(d.receveur_id)!==String(utilisateur.id))return;await chargerBadgeDemandesAmis();if(titrePage.textContent.includes("Mes potes"))afficherAmisComplet();}).subscribe();}
 function initialiserCanalReactions(){if(canalReactions||!utilisateur)return;canalReactions=client.channel("reactions-globales").on("postgres_changes",{event:"*",schema:"public",table:"reactions_messages"},p=>{let id=p.new?.message_id||p.old?.message_id;if(!id)return;let el=document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`);if(el)chargerReactions(id,el);}).subscribe();}
 async function chargerReactions(id,bloc){let z=bloc.querySelector(".zone-reactions");if(!z)return;let r=await client.from("reactions_messages").select("reaction,utilisateur_id").eq("message_id",id);if(r.error)return;let g={};(r.data||[]).forEach(x=>(g[x.reaction]??=[]).push(x.utilisateur_id));z.querySelectorAll(".btn-reaction").forEach(b=>{let a=g[b.dataset.reaction]||[];b.classList.toggle("actif",a.some(x=>String(x)===String(utilisateur.id)));b.querySelector(".compteur-reaction").textContent=a.length||"";});}
-function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)===String(utilisateur.id) || estAdmin()){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent=String(auteur)===String(utilisateur.id)?"🗑️ Supprimer":"🛡️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type,estAdmin() && String(auteur)!==String(utilisateur.id));z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
+function ajouterActionsMessage(bloc,m,type){if(!m.id)return;bloc.dataset.messageId=String(m.id);let z=document.createElement("div");z.className="actions-message zone-reactions";["👍","❤️","😂","😮","😢"].forEach(r=>{let b=document.createElement("button");b.className="btn-reaction";b.dataset.reaction=r;b.textContent=r;let c=document.createElement("span");c.className="compteur-reaction";b.appendChild(c);b.onclick=()=>basculerReaction(m.id,type,r,bloc);z.appendChild(b);});let auteur=type==="public"?m.utilisateur_id:m.auteur_id;if(String(auteur)!==String(utilisateur.id) && estAdmin()){let a=document.createElement("button");a.className="btn-avertir-message";a.textContent="⚠️ Avertir";a.title="Envoyer un avertissement à l'auteur";a.onclick=()=>avertirUtilisateur(auteur,m.id,type);z.appendChild(a);}if(String(auteur)===String(utilisateur.id) || estAdmin()){let b=document.createElement("button");b.className="btn-supprimer-message";b.textContent=String(auteur)===String(utilisateur.id)?"🗑️ Supprimer":"🛡️ Supprimer";b.onclick=()=>supprimerMessage(m.id,type,estAdmin() && String(auteur)!==String(utilisateur.id));z.appendChild(b);}bloc.appendChild(z);chargerReactions(m.id,bloc);}
 async function basculerReaction(id,type,r,bloc){
     let q=await client.from("reactions_messages").select("id").eq("message_id",id).eq("type_message",type).eq("utilisateur_id",utilisateur.id).eq("reaction",r).maybeSingle();
     if(q.data){
