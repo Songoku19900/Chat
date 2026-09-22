@@ -2334,8 +2334,8 @@ let pseudoActuel = "";
 let gradeActuel = "arrivant";
 const GRADES = {
     arrivant: { nom: "Arrivant", emoji: "👤" },
-    membre: { nom: "Membre", emoji: "👨‍🎓" },
-    admin: { nom: "Admin", emoji: "👮‍♂️" },
+    membre: { nom: "Membre", emoji: "🟢" },
+    admin: { nom: "Admin", emoji: "🔵" },
     chef: { nom: "Chef", emoji: "🟣" },
     fondateur: { nom: "Fondateur", emoji: "👑" }
 };
@@ -2594,6 +2594,45 @@ function verifierCode(code) {
 
     return code.length >= 6;
 
+}
+
+
+/* =========================================================
+   VERIFICATION DU BANNISSEMENT EN TEMPS REEL
+========================================================= */
+
+async function utilisateurEstBanni() {
+
+    if (!utilisateur || !utilisateur.id) {
+        return false;
+    }
+
+    const { data: profil, error } = await client
+        .from("profils")
+        .select("banni_jusqu_a")
+        .eq("id", utilisateur.id)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Erreur de vérification du bannissement :", error);
+        alert("Impossible de vérifier si ton compte est banni.");
+        return true;
+    }
+
+    if (profil && profil.banni_jusqu_a) {
+        const dateBan = new Date(profil.banni_jusqu_a);
+
+        if (dateBan > new Date()) {
+            alert(
+                "🚫 Ton compte est banni jusqu'au " +
+                dateBan.toLocaleString("fr-FR") +
+                "."
+            );
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
@@ -3816,6 +3855,12 @@ async function envoyerMessage() {
     }
 
 
+    if (await utilisateurEstBanni()) {
+        inputMessage.value = "";
+        return;
+    }
+
+
     /*
        Si on est dans une conversation privée,
        on envoie un message privé.
@@ -3928,10 +3973,9 @@ async function afficherModeration() {
             <div class="modo-ligne">
                 <select class="champ" id="modoGrade">
                     <option value="arrivant">👤 Arrivant</option>
-                    <option value="membre">👨‍🎓 Membre</option>
-                    <option value="admin">👮‍♂️ Admin</option>
+                    <option value="membre">🟢 Membre</option>
+                    <option value="admin">🔵 Admin</option>
                     <option value="chef">🟣 Chef</option>
-                    ---" }
                     ${estFondateur() ? '<option value="fondateur">👑 Fondateur</option>' : ''}
                 </select>
                 <button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button>
@@ -6045,6 +6089,16 @@ async function envoyerMessagePrive(
 
 async function envoyerVocalPublic(blob) {
 
+    if (await utilisateurEstBanni()) {
+        if (typeof btnVocal !== "undefined" && btnVocal) btnVocal.disabled = false;
+        if (typeof btnImage !== "undefined" && btnImage) btnImage.disabled = false;
+        if (typeof statutVocal !== "undefined" && statutVocal) {
+            statutVocal.textContent = "";
+        }
+        return;
+    }
+
+
     if (!utilisateur) return;
 
     try {
@@ -6221,6 +6275,16 @@ async function envoyerVocalPrive(
     blob
 ) {
 
+    if (await utilisateurEstBanni()) {
+        if (typeof btnVocal !== "undefined" && btnVocal) btnVocal.disabled = false;
+        if (typeof btnImage !== "undefined" && btnImage) btnImage.disabled = false;
+        if (typeof statutVocal !== "undefined" && statutVocal) {
+            statutVocal.textContent = "";
+        }
+        return;
+    }
+
+
     if (
         !conversationActuelle ||
         !utilisateur
@@ -6339,6 +6403,16 @@ async function envoyerVocalPrive(
 async function envoyerImagePrive(
     fichier
 ) {
+
+    if (await utilisateurEstBanni()) {
+        if (typeof btnVocal !== "undefined" && btnVocal) btnVocal.disabled = false;
+        if (typeof btnImage !== "undefined" && btnImage) btnImage.disabled = false;
+        if (typeof statutVocal !== "undefined" && statutVocal) {
+            statutVocal.textContent = "";
+        }
+        return;
+    }
+
 
     if (!utilisateur) {
         return;
