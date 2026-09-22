@@ -6019,6 +6019,16 @@ async function envoyerMessagePrive(
     contenu
 ) {
 
+    if (!utilisateur) {
+        return;
+    }
+
+    // Un compte banni ne peut pas envoyer de message privé.
+    if (await utilisateurEstBanni()) {
+        inputMessage.value = "";
+        return;
+    }
+
     if (
         !conversationActuelle ||
         !utilisateurPriveActuel
