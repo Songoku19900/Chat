@@ -2458,6 +2458,34 @@ async function envoyerPushMessageGeneral(contenu) {
     }
 }
 
+async function envoyerPushMessagePrive(contenu) {
+    try {
+        if (!utilisateur || !utilisateur.id || !utilisateurPriveActuel || !utilisateurPriveActuel.id) return;
+
+        const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": "Bearer " + SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                type: "message_prive",
+                auteur_id: utilisateur.id,
+                auteur_pseudo: pseudoActuel,
+                destinataire_id: utilisateurPriveActuel.id,
+                contenu: contenu
+            })
+        });
+
+        if (!reponse.ok) {
+            console.warn("Push privé non envoyé :", await reponse.text());
+        }
+    } catch (error) {
+        console.warn("Erreur envoi push privé :", error);
+    }
+}
+
 
 /* =========================================================
    VARIABLES
@@ -6270,6 +6298,8 @@ async function envoyerMessagePrive(
                 "@" + pseudoActuel + " t'a envoyé un message privé."
             );
         }
+
+        await envoyerPushMessagePrive(contenu);
 
     }
 
