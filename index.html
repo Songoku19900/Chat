@@ -2395,7 +2395,8 @@ async function activerNotificationsPush() {
             bouton.style.color = "#166534";
         }
 
-        console.log("✅ Notifications push activées");
+        localStorage.setItem("notifications_push_active_" + String(utilisateur.id), "1");
+        console.log("✅ Notifications push activées et sauvegardées");
     } catch (error) {
         console.error("Erreur notifications push :", error);
         alert("Impossible d'activer les notifications : " + error.message);
@@ -2405,65 +2406,110 @@ async function activerNotificationsPush() {
 
 async function initialiserNotificationsPush() {
     const bouton = document.getElementById("btnActiverPush");
-    if (!bouton) return;
+    if (!bouton || !utilisateur || !utilisateur.id) return;
 
-    bouton.addEventListener("click", activerNotificationsPush);
+    if (bouton.dataset.pushInitialise !== "1") {
+        bouton.dataset.pushInitialise = "1";
+        bouton.addEventListener("click", activerNotificationsPush);
+    }
 
-    if ("Notification" in window && Notification.permission === "granted") {
+    const cleEtatPush = "notifications_push_active_" + String(utilisateur.id);
+
+    function afficherNotificationsActivees() {
+        bouton.textContent = "🔔 Notifications activées";
+        bouton.style.background = "#dcfce7";
+        bouton.style.color = "#166534";
+        bouton.disabled = false;
+    }
+
+    function afficherNotificationsDesactivees() {
+        bouton.textContent = "🔔 Activer les notifications";
+        bouton.style.background = "#ecfdf5";
+        bouton.style.color = "#15803d";
+        bouton.disabled = false;
+    }
+
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        bouton.disabled = true;
+        bouton.textContent = "Notifications non disponibles";
+        return;
+    }
+
+    try {
+        const permission = Notification.permission;
+
+        if (permission !== "granted") {
+            localStorage.removeItem(cleEtatPush);
+            afficherNotificationsDesactivees();
+            return;
+        }
+
+        const registration = await enregistrerServiceWorkerPush();
+
+        // Demande au navigateur de vérifier si le service worker déployé est à jour.
         try {
-            await enregistrerServiceWorkerPush();
-            const subscription = await registrationServiceWorker.pushManager.getSubscription();
-            if (subscription && utilisateur) {
-                const json = subscription.toJSON();
-                if (json.endpoint && json.keys) {
-                    await client.from("notifications_push").upsert({
-                        utilisateur_id: utilisateur.id,
-                        endpoint: json.endpoint,
-                        p256dh: json.keys.p256dh,
-                        auth: json.keys.auth
-                    }, { onConflict: "endpoint" });
-                    bouton.textContent = "🔔 Notifications activées";
-                    bouton.style.background = "#dcfce7";
-                    bouton.style.color = "#166534";
-                }
+            await registration.update();
+        } catch (e) {
+            console.warn("Mise à jour du service worker impossible :", e);
+        }
+
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+            const json = subscription.toJSON();
+
+            if (!json.endpoint || !json.keys || !json.keys.p256dh || !json.keys.auth) {
+                throw new Error("Abonnement push incomplet.");
             }
-        } catch (error) {
-            console.warn("Push non initialisé automatiquement :", error);
+
+            const { error } = await client
+                .from("notifications_push")
+                .upsert({
+                    utilisateur_id: utilisateur.id,
+                    endpoint: json.endpoint,
+                    p256dh: json.keys.p256dh,
+                    auth: json.keys.auth
+                }, { onConflict: "endpoint" });
+
+            if (error) throw error;
+
+            localStorage.setItem(cleEtatPush, "1");
+            afficherNotificationsActivees();
+            console.log("✅ Abonnement Push retrouvé après rechargement");
+            return;
+        }
+
+        // La permission est accordée mais le navigateur n'a plus l'abonnement.
+        // On garde le choix mémorisé, mais on demande à l'utilisateur de cliquer
+        // pour recréer l'abonnement, car certains navigateurs exigent un geste utilisateur.
+        if (localStorage.getItem(cleEtatPush) === "1") {
+            bouton.textContent = "🔔 Reconnecter les notifications";
+            bouton.style.background = "#fff7ed";
+            bouton.style.color = "#c2410c";
+        } else {
+            afficherNotificationsDesactivees();
+        }
+    } catch (error) {
+        console.warn("Push non initialisé automatiquement :", error);
+        if (localStorage.getItem(cleEtatPush) === "1" && Notification.permission === "granted") {
+            bouton.textContent = "🔔 Reconnecter les notifications";
+            bouton.style.background = "#fff7ed";
+            bouton.style.color = "#c2410c";
+        } else {
+            afficherNotificationsDesactivees();
         }
     }
 }
 
 async function envoyerPushMessageGeneral(contenu) {
     try {
-        if (!utilisateur || !utilisateur.id || !contenu) {
-            console.warn("Push général ignoré : informations manquantes.");
-            return false;
-        }
-
-        const headers = {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY
-        };
-
-        // Le site utilise son propre système de connexion (pseudo + code).
-        // On n'a donc normalement pas de session Supabase Auth.
-        // Si une vraie session Supabase existe, on l'utilise automatiquement.
-        try {
-            const sessionResult = await client.auth.getSession();
-            const accessToken = sessionResult?.data?.session?.access_token;
-            if (accessToken) {
-                headers["Authorization"] = "Bearer " + accessToken;
-            }
-        } catch (e) {
-            console.warn("Session Supabase Auth indisponible pour le push :", e);
-        }
-
-        console.log("📤 Envoi push général vers send-push...");
-
         const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
             method: "POST",
-            headers,
-            cache: "no-store",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": "Bearer " + SUPABASE_KEY
+            },
             body: JSON.stringify({
                 type: "message_general",
                 auteur_id: utilisateur.id,
@@ -2473,91 +2519,46 @@ async function envoyerPushMessageGeneral(contenu) {
         });
 
         const texteReponse = await reponse.text();
+        console.log("📨 Réponse send-push général :", reponse.status, texteReponse);
 
         if (!reponse.ok) {
-            console.error("❌ send-push général a répondu", reponse.status, texteReponse);
-            return false;
+            console.warn("Push non envoyé :", texteReponse);
         }
-
-        console.log("✅ send-push général :", texteReponse);
-        return true;
     } catch (error) {
-        console.error("❌ Erreur appel send-push général :", error);
-        return false;
+        console.warn("Erreur envoi push :", error);
     }
 }
 
-async function envoyerPushMessagePrive(contenu, destinataireId = null) {
+async function envoyerPushMessagePrive(contenu) {
     try {
-        const idDestinataire =
-            destinataireId ||
-            (utilisateurPriveActuel && utilisateurPriveActuel.id);
-
-        if (!utilisateur || !utilisateur.id) {
-            console.warn("Push privé ignoré : utilisateur connecté introuvable.");
-            return false;
+        if (!utilisateur || !utilisateur.id || !utilisateurPriveActuel || !utilisateurPriveActuel.id) {
+            return;
         }
-
-        if (!idDestinataire) {
-            console.error("❌ Push privé impossible : destinataire introuvable.");
-            return false;
-        }
-
-        if (!contenu) {
-            console.warn("Push privé ignoré : contenu vide.");
-            return false;
-        }
-
-        const headers = {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY
-        };
-
-        // Le site utilise son propre système de connexion (pseudo + code).
-        // Si une vraie session Supabase Auth existe, on l'utilise.
-        try {
-            const sessionResult = await client.auth.getSession();
-            const accessToken = sessionResult?.data?.session?.access_token;
-            if (accessToken) {
-                headers["Authorization"] = "Bearer " + accessToken;
-            }
-        } catch (e) {
-            console.warn("Session Supabase Auth indisponible pour le push privé :", e);
-        }
-
-        const donnees = {
-            type: "message_prive",
-            auteur_id: utilisateur.id,
-            auteur_pseudo: pseudoActuel,
-            destinataire_id: idDestinataire,
-            contenu: contenu
-        };
-
-        console.log("📤 Envoi push privé vers send-push...", donnees);
 
         const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
             method: "POST",
-            headers,
-            cache: "no-store",
-            body: JSON.stringify(donnees)
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": "Bearer " + SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                type: "message_prive",
+                auteur_id: utilisateur.id,
+                auteur_pseudo: pseudoActuel,
+                destinataire_id: utilisateurPriveActuel.id,
+                contenu: contenu
+            })
         });
 
         const texteReponse = await reponse.text();
+        console.log("📨 Réponse send-push privé :", reponse.status, texteReponse);
 
         if (!reponse.ok) {
-            console.error(
-                "❌ send-push privé a répondu",
-                reponse.status,
-                texteReponse
-            );
-            return false;
+            console.warn("Push privé non envoyé :", texteReponse);
         }
-
-        console.log("✅ send-push privé :", texteReponse);
-        return true;
     } catch (error) {
-        console.error("❌ Erreur appel send-push privé :", error);
-        return false;
+        console.warn("Erreur envoi push privé :", error);
     }
 }
 
@@ -6375,8 +6376,7 @@ async function envoyerMessagePrive(
         }
 
         await envoyerPushMessagePrive(
-            contenu,
-            utilisateurPriveActuel && utilisateurPriveActuel.id
+            contenu
         );
 
     }
@@ -6673,8 +6673,7 @@ async function envoyerVocalPrive(
         }
 
         await envoyerPushMessagePrive(
-            "🎙️ @" + pseudoActuel + " t'a envoyé un vocal.",
-            utilisateurPriveActuel && utilisateurPriveActuel.id
+            "🎙️ @" + pseudoActuel + " t'a envoyé un vocal."
         );
 
         statutVocal.textContent =
@@ -6887,8 +6886,7 @@ async function envoyerImagePrive(
         }
 
         await envoyerPushMessagePrive(
-            "🖼️ @" + pseudoActuel + " t'a envoyé une image.",
-            utilisateurPriveActuel && utilisateurPriveActuel.id
+            "🖼️ @" + pseudoActuel + " t'a envoyé une image."
         );
 
         statutVocal.textContent =
