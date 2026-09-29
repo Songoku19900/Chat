@@ -2435,13 +2435,35 @@ async function initialiserNotificationsPush() {
 
 async function envoyerPushMessageGeneral(contenu) {
     try {
+        if (!utilisateur || !utilisateur.id || !contenu) {
+            console.warn("Push général ignoré : informations manquantes.");
+            return false;
+        }
+
+        const headers = {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY
+        };
+
+        // Le site utilise son propre système de connexion (pseudo + code).
+        // On n'a donc normalement pas de session Supabase Auth.
+        // Si une vraie session Supabase existe, on l'utilise automatiquement.
+        try {
+            const sessionResult = await client.auth.getSession();
+            const accessToken = sessionResult?.data?.session?.access_token;
+            if (accessToken) {
+                headers["Authorization"] = "Bearer " + accessToken;
+            }
+        } catch (e) {
+            console.warn("Session Supabase Auth indisponible pour le push :", e);
+        }
+
+        console.log("📤 Envoi push général vers send-push...");
+
         const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": SUPABASE_KEY,
-                "Authorization": "Bearer " + SUPABASE_KEY
-            },
+            headers,
+            cache: "no-store",
             body: JSON.stringify({
                 type: "message_general",
                 auteur_id: utilisateur.id,
@@ -2450,41 +2472,92 @@ async function envoyerPushMessageGeneral(contenu) {
             })
         });
 
+        const texteReponse = await reponse.text();
+
         if (!reponse.ok) {
-            console.warn("Push non envoyé :", await reponse.text());
+            console.error("❌ send-push général a répondu", reponse.status, texteReponse);
+            return false;
         }
+
+        console.log("✅ send-push général :", texteReponse);
+        return true;
     } catch (error) {
-        console.warn("Erreur envoi push :", error);
+        console.error("❌ Erreur appel send-push général :", error);
+        return false;
     }
 }
 
-async function envoyerPushMessagePrive(contenu) {
+async function envoyerPushMessagePrive(contenu, destinataireId = null) {
     try {
-        if (!utilisateur || !utilisateur.id || !utilisateurPriveActuel || !utilisateurPriveActuel.id) {
-            return;
+        const idDestinataire =
+            destinataireId ||
+            (utilisateurPriveActuel && utilisateurPriveActuel.id);
+
+        if (!utilisateur || !utilisateur.id) {
+            console.warn("Push privé ignoré : utilisateur connecté introuvable.");
+            return false;
         }
+
+        if (!idDestinataire) {
+            console.error("❌ Push privé impossible : destinataire introuvable.");
+            return false;
+        }
+
+        if (!contenu) {
+            console.warn("Push privé ignoré : contenu vide.");
+            return false;
+        }
+
+        const headers = {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY
+        };
+
+        // Le site utilise son propre système de connexion (pseudo + code).
+        // Si une vraie session Supabase Auth existe, on l'utilise.
+        try {
+            const sessionResult = await client.auth.getSession();
+            const accessToken = sessionResult?.data?.session?.access_token;
+            if (accessToken) {
+                headers["Authorization"] = "Bearer " + accessToken;
+            }
+        } catch (e) {
+            console.warn("Session Supabase Auth indisponible pour le push privé :", e);
+        }
+
+        const donnees = {
+            type: "message_prive",
+            auteur_id: utilisateur.id,
+            auteur_pseudo: pseudoActuel,
+            destinataire_id: idDestinataire,
+            contenu: contenu
+        };
+
+        console.log("📤 Envoi push privé vers send-push...", donnees);
 
         const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": SUPABASE_KEY,
-                "Authorization": "Bearer " + SUPABASE_KEY
-            },
-            body: JSON.stringify({
-                type: "message_prive",
-                auteur_id: utilisateur.id,
-                auteur_pseudo: pseudoActuel,
-                destinataire_id: utilisateurPriveActuel.id,
-                contenu: contenu
-            })
+            headers,
+            cache: "no-store",
+            body: JSON.stringify(donnees)
         });
 
+        const texteReponse = await reponse.text();
+
         if (!reponse.ok) {
-            console.warn("Push privé non envoyé :", await reponse.text());
+            console.error(
+                "❌ send-push privé a répondu",
+                reponse.status,
+                texteReponse
+            );
+            return false;
         }
+
+        console.log("✅ send-push privé :", texteReponse);
+        return true;
     } catch (error) {
-        console.warn("Erreur envoi push privé :", error);
+        console.error("❌ Erreur appel send-push privé :", error);
+        return false;
     }
 }
 
@@ -6302,7 +6375,8 @@ async function envoyerMessagePrive(
         }
 
         await envoyerPushMessagePrive(
-            contenu
+            contenu,
+            utilisateurPriveActuel && utilisateurPriveActuel.id
         );
 
     }
@@ -6599,7 +6673,8 @@ async function envoyerVocalPrive(
         }
 
         await envoyerPushMessagePrive(
-            "🎙️ @" + pseudoActuel + " t'a envoyé un vocal."
+            "🎙️ @" + pseudoActuel + " t'a envoyé un vocal.",
+            utilisateurPriveActuel && utilisateurPriveActuel.id
         );
 
         statutVocal.textContent =
@@ -6812,7 +6887,8 @@ async function envoyerImagePrive(
         }
 
         await envoyerPushMessagePrive(
-            "🖼️ @" + pseudoActuel + " t'a envoyé une image."
+            "🖼️ @" + pseudoActuel + " t'a envoyé une image.",
+            utilisateurPriveActuel && utilisateurPriveActuel.id
         );
 
         statutVocal.textContent =
