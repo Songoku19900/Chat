@@ -5,37 +5,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Chat - Discute avec tes amis en ligne</title>
-<meta name="description" content="Chat est un site de discussion en ligne pour parler avec tes amis, envoyer des messages privés, partager des contenus et jouer ensemble.">
-<meta name="robots" content="index, follow, max-image-preview:large">
-<meta name="googlebot" content="index, follow">
-<meta name="author" content="Chat">
-<meta name="theme-color" content="#4f46e5">
-
-<link rel="canonical" href="https://songoku19900.github.io/Chat/">
+<title>Chat</title>
 <link rel="manifest" href="./manifest.json">
-
-<meta property="og:type" content="website">
-<meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Chat - Discute avec tes amis en ligne">
-<meta property="og:description" content="Un espace pour discuter avec tes amis, envoyer des messages privés et jouer ensemble.">
-<meta property="og:url" content="https://songoku19900.github.io/Chat/">
-<meta property="og:site_name" content="Chat">
-
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Chat - Discute avec tes amis en ligne">
-<meta name="twitter:description" content="Un espace pour discuter avec tes amis et jouer ensemble.">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Chat",
-  "url": "https://songoku19900.github.io/Chat/",
-  "inLanguage": "fr-FR",
-  "description": "Site de discussion en ligne pour parler avec ses amis, envoyer des messages privés et jouer ensemble."
-}
-</script>
+<meta name="theme-color" content="#4f46e5">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -2483,6 +2455,36 @@ async function envoyerPushMessageGeneral(contenu) {
         }
     } catch (error) {
         console.warn("Erreur envoi push :", error);
+    }
+}
+
+async function envoyerPushMessagePrive(contenu) {
+    try {
+        if (!utilisateur || !utilisateur.id || !utilisateurPriveActuel || !utilisateurPriveActuel.id) {
+            return;
+        }
+
+        const reponse = await fetch(SUPABASE_URL + "/functions/v1/send-push", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": "Bearer " + SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                type: "message_prive",
+                auteur_id: utilisateur.id,
+                auteur_pseudo: pseudoActuel,
+                destinataire_id: utilisateurPriveActuel.id,
+                contenu: contenu
+            })
+        });
+
+        if (!reponse.ok) {
+            console.warn("Push privé non envoyé :", await reponse.text());
+        }
+    } catch (error) {
+        console.warn("Erreur envoi push privé :", error);
     }
 }
 
@@ -6299,6 +6301,10 @@ async function envoyerMessagePrive(
             );
         }
 
+        await envoyerPushMessagePrive(
+            contenu
+        );
+
     }
 
 
@@ -6592,6 +6598,10 @@ async function envoyerVocalPrive(
             );
         }
 
+        await envoyerPushMessagePrive(
+            "🎙️ @" + pseudoActuel + " t'a envoyé un vocal."
+        );
+
         statutVocal.textContent =
             "Vocal envoyé";
 
@@ -6800,6 +6810,10 @@ async function envoyerImagePrive(
                 "@" + pseudoActuel + " t'a envoyé une image."
             );
         }
+
+        await envoyerPushMessagePrive(
+            "🖼️ @" + pseudoActuel + " t'a envoyé une image."
+        );
 
         statutVocal.textContent =
             "Image envoyée";
