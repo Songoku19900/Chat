@@ -2114,7 +2114,7 @@ header {
 
     </div>
 
-    <button id="btnActiverPush" type="button" style="padding:9px 12px;background:#ecfdf5;color:#15803d;border:1px solid #bbf7d0;border-radius:10px;font-weight:bold;">🔔 Activer les notifications</button>
+    <button id="btnActiverPush" type="button" aria-pressed="false" style="padding:9px 12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:10px;font-weight:bold;">🔕 Notifications désactivées</button>
 
     <button
         class="btn-deconnexion"
@@ -2389,14 +2389,10 @@ async function activerNotificationsPush() {
 
         if (error) throw error;
 
-        if (bouton) {
-            bouton.textContent = "🔔 Notifications activées";
-            bouton.style.background = "#dcfce7";
-            bouton.style.color = "#166534";
-        }
+        localStorage.setItem("notifications_push_active", "1");
+        mettreAJourBoutonNotificationsPush(true);
 
-        localStorage.setItem("notifications_push_active_" + String(utilisateur.id), "1");
-        console.log("✅ Notifications push activées et sauvegardées");
+        console.log("✅ Notifications push activées");
     } catch (error) {
         console.error("Erreur notifications push :", error);
         alert("Impossible d'activer les notifications : " + error.message);
@@ -2404,99 +2400,125 @@ async function activerNotificationsPush() {
     }
 }
 
-async function initialiserNotificationsPush() {
+async function desactiverNotificationsPush() {
+    if (!utilisateur || !utilisateur.id) return;
+
     const bouton = document.getElementById("btnActiverPush");
-    if (!bouton || !utilisateur || !utilisateur.id) return;
-
-    if (bouton.dataset.pushInitialise !== "1") {
-        bouton.dataset.pushInitialise = "1";
-        bouton.addEventListener("click", activerNotificationsPush);
-    }
-
-    const cleEtatPush = "notifications_push_active_" + String(utilisateur.id);
-
-    function afficherNotificationsActivees() {
-        bouton.textContent = "🔔 Notifications activées";
-        bouton.style.background = "#dcfce7";
-        bouton.style.color = "#166534";
-        bouton.disabled = false;
-    }
-
-    function afficherNotificationsDesactivees() {
-        bouton.textContent = "🔔 Activer les notifications";
-        bouton.style.background = "#ecfdf5";
-        bouton.style.color = "#15803d";
-        bouton.disabled = false;
-    }
-
-    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-        bouton.disabled = true;
-        bouton.textContent = "Notifications non disponibles";
-        return;
-    }
+    if (bouton) bouton.disabled = true;
 
     try {
-        const permission = Notification.permission;
+        let subscription = null;
 
-        if (permission !== "granted") {
-            localStorage.removeItem(cleEtatPush);
-            afficherNotificationsDesactivees();
-            return;
+        if ("serviceWorker" in navigator && "PushManager" in window) {
+            try {
+                const registration = await enregistrerServiceWorkerPush();
+                subscription = await registration.pushManager.getSubscription();
+            } catch (e) {
+                console.warn("Impossible de récupérer l'abonnement push :", e);
+            }
         }
-
-        const registration = await enregistrerServiceWorkerPush();
-
-        // Demande au navigateur de vérifier si le service worker déployé est à jour.
-        try {
-            await registration.update();
-        } catch (e) {
-            console.warn("Mise à jour du service worker impossible :", e);
-        }
-
-        let subscription = await registration.pushManager.getSubscription();
 
         if (subscription) {
-            const json = subscription.toJSON();
-
-            if (!json.endpoint || !json.keys || !json.keys.p256dh || !json.keys.auth) {
-                throw new Error("Abonnement push incomplet.");
-            }
+            const endpoint = subscription.endpoint;
 
             const { error } = await client
                 .from("notifications_push")
-                .upsert({
-                    utilisateur_id: utilisateur.id,
-                    endpoint: json.endpoint,
-                    p256dh: json.keys.p256dh,
-                    auth: json.keys.auth
-                }, { onConflict: "endpoint" });
+                .delete()
+                .eq("utilisateur_id", utilisateur.id)
+                .eq("endpoint", endpoint);
 
             if (error) throw error;
 
-            localStorage.setItem(cleEtatPush, "1");
-            afficherNotificationsActivees();
-            console.log("✅ Abonnement Push retrouvé après rechargement");
-            return;
+            await subscription.unsubscribe();
+        } else {
+            // Nettoyage des anciens abonnements de ce compte si le navigateur
+            // ne retrouve plus l'abonnement local.
+            const { error } = await client
+                .from("notifications_push")
+                .delete()
+                .eq("utilisateur_id", utilisateur.id);
+
+            if (error) throw error;
         }
 
-        // La permission est accordée mais le navigateur n'a plus l'abonnement.
-        // On garde le choix mémorisé, mais on demande à l'utilisateur de cliquer
-        // pour recréer l'abonnement, car certains navigateurs exigent un geste utilisateur.
-        if (localStorage.getItem(cleEtatPush) === "1") {
-            bouton.textContent = "🔔 Reconnecter les notifications";
-            bouton.style.background = "#fff7ed";
-            bouton.style.color = "#c2410c";
-        } else {
-            afficherNotificationsDesactivees();
-        }
+        localStorage.setItem("notifications_push_active", "0");
+        mettreAJourBoutonNotificationsPush(false);
+
+        console.log("🔕 Notifications push désactivées");
     } catch (error) {
-        console.warn("Push non initialisé automatiquement :", error);
-        if (localStorage.getItem(cleEtatPush) === "1" && Notification.permission === "granted") {
-            bouton.textContent = "🔔 Reconnecter les notifications";
-            bouton.style.background = "#fff7ed";
-            bouton.style.color = "#c2410c";
-        } else {
-            afficherNotificationsDesactivees();
+        console.error("Erreur désactivation notifications push :", error);
+        alert("Impossible de désactiver les notifications : " + error.message);
+        if (bouton) bouton.disabled = false;
+    }
+}
+
+function mettreAJourBoutonNotificationsPush(actif) {
+    const bouton = document.getElementById("btnActiverPush");
+    if (!bouton) return;
+
+    bouton.disabled = false;
+
+    if (actif) {
+        bouton.textContent = "🔔 Notifications activées";
+        bouton.style.background = "#dcfce7";
+        bouton.style.color = "#166534";
+        bouton.style.borderColor = "#86efac";
+        bouton.setAttribute("aria-pressed", "true");
+        bouton.title = "Cliquer pour désactiver les notifications";
+    } else {
+        bouton.textContent = "🔕 Notifications désactivées";
+        bouton.style.background = "#f3f4f6";
+        bouton.style.color = "#374151";
+        bouton.style.borderColor = "#d1d5db";
+        bouton.setAttribute("aria-pressed", "false");
+        bouton.title = "Cliquer pour activer les notifications";
+    }
+}
+
+async function basculerNotificationsPush() {
+    const actif = localStorage.getItem("notifications_push_active") === "1";
+
+    if (actif) {
+        await desactiverNotificationsPush();
+    } else {
+        await activerNotificationsPush();
+    }
+}
+
+async function initialiserNotificationsPush() {
+    const bouton = document.getElementById("btnActiverPush");
+    if (!bouton) return;
+
+    bouton.addEventListener("click", basculerNotificationsPush);
+
+    const actifSauvegarde = localStorage.getItem("notifications_push_active") === "1";
+    mettreAJourBoutonNotificationsPush(actifSauvegarde);
+
+    // Si le navigateur a encore un abonnement push, on garde l'état activé.
+    if ("Notification" in window && Notification.permission === "granted") {
+        try {
+            await enregistrerServiceWorkerPush();
+            const subscription = await registrationServiceWorker.pushManager.getSubscription();
+
+            if (subscription && utilisateur) {
+                const json = subscription.toJSON();
+
+                if (json.endpoint && json.keys && json.keys.p256dh && json.keys.auth) {
+                    const { error } = await client.from("notifications_push").upsert({
+                        utilisateur_id: utilisateur.id,
+                        endpoint: json.endpoint,
+                        p256dh: json.keys.p256dh,
+                        auth: json.keys.auth
+                    }, { onConflict: "endpoint" });
+
+                    if (!error) {
+                        localStorage.setItem("notifications_push_active", "1");
+                        mettreAJourBoutonNotificationsPush(true);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("Push non initialisé automatiquement :", error);
         }
     }
 }
@@ -2518,11 +2540,8 @@ async function envoyerPushMessageGeneral(contenu) {
             })
         });
 
-        const texteReponse = await reponse.text();
-        console.log("📨 Réponse send-push général :", reponse.status, texteReponse);
-
         if (!reponse.ok) {
-            console.warn("Push non envoyé :", texteReponse);
+            console.warn("Push non envoyé :", await reponse.text());
         }
     } catch (error) {
         console.warn("Erreur envoi push :", error);
@@ -2551,11 +2570,8 @@ async function envoyerPushMessagePrive(contenu) {
             })
         });
 
-        const texteReponse = await reponse.text();
-        console.log("📨 Réponse send-push privé :", reponse.status, texteReponse);
-
         if (!reponse.ok) {
-            console.warn("Push privé non envoyé :", texteReponse);
+            console.warn("Push privé non envoyé :", await reponse.text());
         }
     } catch (error) {
         console.warn("Erreur envoi push privé :", error);
