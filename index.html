@@ -2099,6 +2099,60 @@ header {
     }
 }
 
+
+/* =========================================================
+   CORRECTIONS MODE SOMBRE
+========================================================= */
+
+/* Carte de modération */
+body.mode-sombre .carte-moderation {
+    background: var(--blanc);
+    color: var(--texte);
+}
+
+body.mode-sombre .carte-moderation h3,
+body.mode-sombre .carte-moderation label,
+body.mode-sombre .carte-moderation p,
+body.mode-sombre .carte-moderation span {
+    color: var(--texte);
+}
+
+body.mode-sombre .carte-moderation .champ {
+    background: #0f172a;
+    color: var(--texte);
+    border-color: var(--bordure);
+}
+
+/* Morpion : X et O visibles */
+body.mode-sombre .case-morpion {
+    color: #f8fafc;
+    background: var(--blanc);
+    border-color: var(--bordure);
+}
+
+/* Suppression des contours blancs autour des boutons */
+button:focus,
+button:focus-visible {
+    outline: none;
+}
+
+body.mode-sombre button:focus,
+body.mode-sombre button:focus-visible {
+    outline: none;
+}
+
+/* Boutons de jeux adaptés au mode sombre */
+body.mode-sombre .btn-retour-jeu {
+    background: #334155;
+    color: #f8fafc;
+}
+
+body.mode-sombre .btn-refuser-jeu,
+body.mode-sombre .btn-quitter-jeu {
+    background: #450a0a;
+    color: #fecaca;
+}
+
 </style>
 
 </head>
