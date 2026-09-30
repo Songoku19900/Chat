@@ -42,6 +42,93 @@
 }
 
 
+
+/* =========================================================
+   MODE SOMBRE
+========================================================= */
+body.mode-sombre {
+    --fond: #0f172a;
+    --blanc: #111827;
+    --texte: #e5e7eb;
+    --texte-secondaire: #94a3b8;
+    --bordure: #334155;
+    --primaire-clair: #1e293b;
+    --vert-clair: #052e16;
+    --rouge-clair: #450a0a;
+    --gris: #64748b;
+    --ombre: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+body.mode-sombre .champ,
+body.mode-sombre .bulle-privee,
+body.mode-sombre .carte-appel,
+body.mode-sombre #panneauNotifications,
+body.mode-sombre .carte-profil,
+body.mode-sombre .profil-formulaire,
+body.mode-sombre .bloc-amis,
+body.mode-sombre .carte-ami,
+body.mode-sombre .carte-demande {
+    background: var(--blanc);
+    color: var(--texte);
+}
+
+body.mode-sombre .mon-compte,
+body.mode-sombre .btn-reaction,
+body.mode-sombre .notification-item:hover {
+    background: #1e293b;
+}
+
+body.mode-sombre .notification-item.non-lue {
+    background: #172554;
+}
+
+body.mode-sombre .notification-item {
+    border-bottom-color: #334155;
+}
+
+body.mode-sombre .btn-avertir-message {
+    background: #431407;
+    color: #fdba74;
+}
+
+body.mode-sombre .case-memoire.revelee {
+    background: #334155;
+}
+
+#btnModeSombre {
+    padding: 9px 12px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+body.mode-sombre #btnModeSombre {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #475569;
+}
+
+@media (max-width: 750px) {
+    #btnModeSombre {
+        width: 42px;
+        min-width: 42px;
+        padding: 9px 0;
+        font-size: 0;
+    }
+
+    #btnModeSombre::before {
+        content: "🌙";
+        font-size: 18px;
+    }
+
+    body.mode-sombre #btnModeSombre::before {
+        content: "☀️";
+    }
+}
+
 /* =========================================================
    GRADES ET MODERATION
 ========================================================= */
@@ -1741,8 +1828,8 @@ header {
     font-size:0;
 }
 
-.case-puissance4.joueur1 { background:#ef4444; }
-.case-puissance4.joueur2 { background:#facc15; }
+.case-puissance4.joueur1 { background:#c96b6b; }
+.case-puissance4.joueur2 { background:#d8b85a; }
 
 .grille-memoire {
     display:grid;
@@ -1846,10 +1933,10 @@ header {
 .grille-pfc { display:grid; grid-template-columns:repeat(3,minmax(85px,1fr)); gap:10px; width:min(420px,100%); }
 .btn-pfc { min-height:90px; border:1px solid var(--bordure); border-radius:14px; background:var(--blanc); font-size:36px; cursor:pointer; }
 .btn-pfc:disabled { opacity:.5; cursor:default; }
-.grille-puissance4 { display:grid; grid-template-columns:repeat(7,42px); gap:5px; padding:8px; border-radius:12px; background:#2563eb; overflow:auto; max-width:100%; }
+.grille-puissance4 { display:grid; grid-template-columns:repeat(7,42px); gap:5px; padding:8px; border-radius:12px; background:#5b7c99; overflow:auto; max-width:100%; }
 .case-puissance4 { width:42px; height:42px; border-radius:50%; border:0; background:white; cursor:pointer; }
-.case-puissance4.jaune { background:#facc15; }
-.case-puissance4.rouge { background:#ef4444; }
+.case-puissance4.jaune { background:#d8b85a; }
+.case-puissance4.rouge { background:#c96b6b; }
 .zone-memoire { display:grid; grid-template-columns:repeat(4,70px); gap:8px; }
 .case-memoire { width:70px; height:70px; border:1px solid var(--bordure); border-radius:12px; background:var(--blanc); font-size:28px; cursor:pointer; }
 .case-memoire.revelee { background:#f3f4f6; }
@@ -2115,6 +2202,8 @@ header {
     </div>
 
     <button id="btnActiverPush" type="button" aria-pressed="false" style="padding:9px 12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:10px;font-weight:bold;">🔕 Notifications désactivées</button>
+
+    <button id="btnModeSombre" type="button" aria-pressed="false" title="Changer le thème">🌙 Mode sombre</button>
 
     <button
         class="btn-deconnexion"
@@ -9254,6 +9343,32 @@ function initialiserNotifications() {
     chargerNotifications();
     initialiserRealtimeNotifications();
 }
+
+
+
+/* =========================================================
+   MODE SOMBRE
+========================================================= */
+function initialiserModeSombre() {
+    const bouton = document.getElementById("btnModeSombre");
+    if (!bouton) return;
+
+    function appliquerModeSombre(actif) {
+        document.body.classList.toggle("mode-sombre", actif);
+        bouton.setAttribute("aria-pressed", actif ? "true" : "false");
+        bouton.textContent = actif ? "☀️ Mode clair" : "🌙 Mode sombre";
+        localStorage.setItem("mode_sombre", actif ? "1" : "0");
+    }
+
+    const actif = localStorage.getItem("mode_sombre") === "1";
+    appliquerModeSombre(actif);
+
+    bouton.addEventListener("click", function() {
+        appliquerModeSombre(!document.body.classList.contains("mode-sombre"));
+    });
+}
+
+initialiserModeSombre();
 
 
 /* =========================================================
