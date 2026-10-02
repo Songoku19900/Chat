@@ -4300,6 +4300,11 @@ async function envoyerMessage() {
        on envoie un message privé.
     */
 
+    if (groupeActuel) {
+        await envoyerMessageGroupe(contenu);
+        return;
+    }
+
     if (
         conversationActuelle
     ) {
@@ -4497,8 +4502,12 @@ async function avertirUtilisateur(utilisateurId, messageId, type) {
         return;
     }
 
+    const contexte = type === "groupe" && groupeActuel
+        ? " dans le groupe « " + groupeActuel.nom + " »"
+        : "";
+
     const confirmation = confirm(
-        "Envoyer un avertissement à @" + cible.pseudo + " pour ce message ?\n\n" +
+        "Envoyer un avertissement à @" + cible.pseudo + contexte + " pour ce message ?\n\n" +
         "Notification : message inapproprié et non-respect des règles du Chat."
     );
 
@@ -4510,7 +4519,9 @@ async function avertirUtilisateur(utilisateurId, messageId, type) {
             utilisateur_id: utilisateurId,
             type: "avertissement",
             titre: "⚠️ Avertissement de modération",
-            message: "Tu as reçu un avertissement car un de tes messages a été considéré comme inapproprié. Merci de respecter les règles du Chat.",
+            message: type === "groupe" && groupeActuel
+                ? "Tu as reçu un avertissement pour un message dans le groupe « " + groupeActuel.nom + " ». Merci de respecter les règles du Chat."
+                : "Tu as reçu un avertissement car un de tes messages a été considéré comme inapproprié. Merci de respecter les règles du Chat.",
             lu: false
         });
 
@@ -6631,6 +6642,7 @@ async function envoyerVocalPublic(blob) {
             .insert({
                 utilisateur_id: utilisateur.id,
                 pseudo: pseudoActuel,
+                grade: gradeActuel,
                 contenu: "",
                 type_message: "vocal",
                 audio_url: resultatUrl.data.publicUrl
@@ -6645,6 +6657,76 @@ async function envoyerVocalPublic(blob) {
         console.error(error);
         statutVocal.textContent = "";
         alert("Impossible d'envoyer le vocal : " + error.message);
+    }
+}
+
+
+/* =========================================================
+   MEDIAS DES GROUPES
+========================================================= */
+
+async function envoyerVocalGroupe(blob) {
+    if (!groupeActuel || !utilisateur) return;
+    if (await utilisateurEstBanni()) return;
+
+    try {
+        const nomFichier = utilisateur.id + "/groupe-" + groupeActuel.id + "-" + Date.now() + ".webm";
+        const upload = await client.storage.from("vocaux").upload(nomFichier, blob, {
+            contentType: blob.type || "audio/webm",
+            upsert: false
+        });
+        if (upload.error) throw upload.error;
+
+        const url = client.storage.from("vocaux").getPublicUrl(nomFichier).data.publicUrl;
+        const { error } = await client.from("messages_groupes").insert({
+            groupe_id: groupeActuel.id,
+            auteur_id: utilisateur.id,
+            pseudo: pseudoActuel,
+            texte: "",
+            type_message: "vocal",
+            audio_url: url
+        });
+        if (error) throw error;
+
+        statutVocal.textContent = "Vocal envoyé";
+        setTimeout(() => statutVocal.textContent = "", 1500);
+    } catch (error) {
+        console.error(error);
+        statutVocal.textContent = "";
+        alert("Impossible d'envoyer le vocal dans le groupe : " + error.message);
+    }
+}
+
+async function envoyerImageGroupe(fichier) {
+    if (!groupeActuel || !utilisateur || !fichier) return;
+    if (await utilisateurEstBanni()) return;
+
+    try {
+        const extension = (fichier.name.split(".").pop() || "jpg").toLowerCase();
+        const nomFichier = utilisateur.id + "/groupe-" + groupeActuel.id + "-" + Date.now() + "." + extension;
+        const upload = await client.storage.from("images").upload(nomFichier, fichier, {
+            contentType: fichier.type,
+            upsert: false
+        });
+        if (upload.error) throw upload.error;
+
+        const url = client.storage.from("images").getPublicUrl(nomFichier).data.publicUrl;
+        const { error } = await client.from("messages_groupes").insert({
+            groupe_id: groupeActuel.id,
+            auteur_id: utilisateur.id,
+            pseudo: pseudoActuel,
+            texte: "",
+            type_message: "image",
+            image_url: url
+        });
+        if (error) throw error;
+
+        statutVocal.textContent = "Image envoyée";
+        setTimeout(() => statutVocal.textContent = "", 1500);
+    } catch (error) {
+        console.error(error);
+        statutVocal.textContent = "";
+        alert("Impossible d'envoyer l'image dans le groupe : " + error.message);
     }
 }
 
@@ -6750,7 +6832,9 @@ async function demarrerOuArreterVocal() {
                         }
                     );
 
-                if (conversationActuelle) {
+                if (groupeActuel) {
+                    await envoyerVocalGroupe(blob);
+                } else if (conversationActuelle) {
                     await envoyerVocalPrive(blob);
                 } else {
                     await envoyerVocalPublic(blob);
@@ -6955,6 +7039,13 @@ async function envoyerImagePrive(
     statutVocal.textContent =
         "Envoi de l'image...";
 
+    if (groupeActuel) {
+        await envoyerImageGroupe(fichier);
+        btnImage.disabled = false;
+        inputImage.value = "";
+        return;
+    }
+
     if (!conversationActuelle) {
         try {
             const extension =
@@ -6982,6 +7073,7 @@ async function envoyerImagePrive(
                 .insert({
                     utilisateur_id: utilisateur.id,
                     pseudo: pseudoActuel,
+                    grade: gradeActuel,
                     contenu: "",
                     type_message: "image",
                     image_url: resultatUrl.data.publicUrl
@@ -8889,13 +8981,100 @@ async function chargerMessagesGroupe(groupeId) {
 }
 
 function afficherMessageGroupe(message) {
-    const zone = document.getElementById("listeMessagesGroupe"); if (!zone) return;
-    const bloc = document.createElement("div"); bloc.className = String(message.auteur_id) === String(utilisateur.id) ? "message-prive moi" : "message-prive"; bloc.dataset.messageId = message.id;
-    const bulle = document.createElement("div"); bulle.className = "bulle-privee";
-    const nom = document.createElement("div"); nom.className = "nom-prive"; nom.textContent = "@" + (message.pseudo || "Utilisateur");
-    const texte = document.createElement("div"); texte.className = "texte-prive"; texte.textContent = message.texte || "";
-    const date = document.createElement("div"); date.className = "date-prive"; date.textContent = message.created_at ? new Date(message.created_at).toLocaleString("fr-FR") : "";
-    bulle.append(nom, texte, date); bloc.appendChild(bulle); zone.appendChild(bloc);
+    const zone = document.getElementById("listeMessagesGroupe");
+    if (!zone) return;
+
+    const bloc = document.createElement("div");
+    bloc.className = String(message.auteur_id) === String(utilisateur.id) ? "message-prive moi" : "message-prive";
+    bloc.dataset.messageId = message.id;
+
+    const bulle = document.createElement("div");
+    bulle.className = "bulle-privee";
+
+    const nom = document.createElement("div");
+    nom.className = "nom-prive";
+    nom.textContent = "@" + (message.pseudo || "Utilisateur");
+
+    const texte = document.createElement("div");
+    texte.className = "texte-prive";
+
+    if (message.type_message === "vocal" && message.audio_url) {
+        texte.appendChild(creerLecteurVocal(message.audio_url));
+    } else if (message.type_message === "image" && message.image_url) {
+        const image = document.createElement("img");
+        image.src = message.image_url;
+        image.alt = "Image envoyée dans le groupe";
+        image.className = "image-privee";
+        texte.appendChild(image);
+    } else {
+        texte.textContent = message.texte || "";
+    }
+
+    const date = document.createElement("div");
+    date.className = "date-prive";
+    date.textContent = message.created_at ? new Date(message.created_at).toLocaleString("fr-FR") : "";
+
+    bulle.append(nom, texte, date);
+    bloc.appendChild(bulle);
+
+    /* Modération des messages de groupe */
+    const actions = document.createElement("div");
+    actions.className = "actions-message";
+
+    const auteurEstMoi = String(message.auteur_id) === String(utilisateur.id);
+
+    if (!auteurEstMoi && estAdmin()) {
+        const avertir = document.createElement("button");
+        avertir.type = "button";
+        avertir.className = "btn-avertir-message";
+        avertir.textContent = "⚠️ Avertir";
+        avertir.title = "Avertir l'auteur de ce message";
+        avertir.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            avertirUtilisateur(message.auteur_id, message.id, "groupe");
+        });
+        actions.appendChild(avertir);
+    }
+
+    if (auteurEstMoi || estAdmin()) {
+        const supprimer = document.createElement("button");
+        supprimer.className = "btn-supprimer-message";
+        supprimer.textContent = auteurEstMoi ? "🗑️ Supprimer" : "🛡️ Supprimer";
+        supprimer.title = auteurEstMoi ? "Supprimer ton message" : "Supprimer ce message au titre de la modération";
+        supprimer.onclick = () => supprimerMessageGroupe(message.id, auteurEstMoi ? false : true);
+        actions.appendChild(supprimer);
+    }
+
+    if (actions.children.length) bloc.appendChild(actions);
+    zone.appendChild(bloc);
+}
+
+async function supprimerMessageGroupe(id, forceModeration = false) {
+    if (!groupeActuel || !utilisateur) return;
+
+    if (!confirm(forceModeration ? "Supprimer ce message au titre de la modération ?" : "Supprimer ce message ?")) return;
+
+    let requete = client
+        .from("messages_groupes")
+        .delete()
+        .eq("id", id);
+
+    if (!forceModeration) {
+        requete = requete.eq("auteur_id", utilisateur.id);
+    }
+
+    const { error } = await requete;
+
+    if (error) {
+        alert("Impossible de supprimer le message : " + error.message);
+        console.error(error);
+        return;
+    }
+
+    document
+        .querySelectorAll(`[data-message-id="${CSS.escape(String(id))}"]`)
+        .forEach(function(element) { element.remove(); });
 }
 
 async function envoyerMessageGroupe(contenu) {
