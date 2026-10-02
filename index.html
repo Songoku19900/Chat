@@ -153,6 +153,21 @@ body.mode-sombre #btnModeSombre {
 .ligne-moderation:last-child { border-bottom:0; }
 .grade-connecte { color:var(--texte-secondaire); font-size:12px; }
 
+
+/* =========================================================
+   CLASSEMENT + MODERATION AVANCEE
+========================================================= */
+.carte-classement{background:var(--blanc);border:1px solid var(--bordure);border-radius:16px;padding:20px;box-shadow:var(--ombre);}
+.classement-top3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;}
+.classement-podium{padding:16px;border:1px solid var(--bordure);border-radius:14px;text-align:center;background:var(--primaire-clair);}
+.classement-podium .medaille{font-size:30px}.classement-podium .rang-nom{font-weight:bold;margin-top:5px}.classement-podium .rang-points{font-size:13px;color:var(--texte-secondaire);margin-top:5px}
+.ligne-classement{display:grid;grid-template-columns:48px minmax(0,1fr) repeat(4,auto);align-items:center;gap:10px;padding:11px 6px;border-bottom:1px solid var(--bordure);}
+.ligne-classement:last-child{border-bottom:0}.rang-classement{font-weight:900;text-align:center}.stats-classement{font-size:12px;color:var(--texte-secondaire);white-space:nowrap}.points-classement{font-weight:900;color:var(--primaire);white-space:nowrap}
+.filtre-classement{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.filtre-classement .champ{margin:0;flex:1;min-width:170px}
+.modo-outils{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.modo-outil{border:1px solid var(--bordure);border-radius:14px;padding:14px;background:var(--primaire-clair)}.modo-outil h4{margin:0 0 8px}.modo-outil p{margin:0 0 10px;color:var(--texte-secondaire);font-size:13px}.btn-outil-modo{padding:10px 13px;border:0;border-radius:10px;background:var(--primaire);color:white;font-weight:bold;cursor:pointer}.btn-outil-modo.danger{background:#dc2626}.journal-modo{max-height:300px;overflow:auto;border:1px solid var(--bordure);border-radius:12px;padding:8px}.journal-ligne{padding:9px;border-bottom:1px solid var(--bordure);font-size:13px}.journal-ligne:last-child{border-bottom:0}.journal-date{font-size:11px;color:var(--texte-secondaire)}
+.modo-recherche{width:100%;margin:0 0 12px}.liste-bannis{max-height:250px;overflow:auto}.badge-mute{display:inline-block;padding:2px 6px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:bold;margin-left:5px}
+@media(max-width:750px){.classement-top3{grid-template-columns:1fr}.ligne-classement{grid-template-columns:35px minmax(0,1fr);}.ligne-classement .stats-classement,.ligne-classement .points-classement{grid-column:2}.modo-outils{grid-template-columns:1fr}}
+
 /* =========================================================
    BASE
 ========================================================= */
@@ -2339,6 +2354,12 @@ body.mode-sombre .btn-quitter-jeu {
         </button>
 
 
+        <button id="btnClassement">
+            <span>🏆</span>
+            <span>Classement</span>
+        </button>
+
+
         <button id="btnModeration" style="display:none;">
             <span>🛡️</span>
             <span>Modération</span>
@@ -2760,6 +2781,9 @@ let utilisateur = null;
 let pseudoActuel = "";
 
 let gradeActuel = "arrivant";
+let muetJusquA = null;
+let dernierEnvoiMessage = 0;
+let compteurSpamMessage = 0;
 const GRADES = {
     arrivant: { nom: "Arrivant", emoji: "👤" },
     membre: { nom: "Membre", emoji: "🟢" },
@@ -2985,6 +3009,8 @@ const btnGroupes =
 
 const btnJeux =
     document.getElementById("btnJeux");
+const btnClassement =
+    document.getElementById("btnClassement");
 
 const btnModeration =
     document.getElementById("btnModeration");
@@ -4275,6 +4301,9 @@ inputMessage.addEventListener(
 
 async function envoyerMessage() {
 
+    if (await verifierMute()) return;
+    if (!antiSpamAutorise()) return;
+
     const contenu =
         inputMessage.value.trim();
 
@@ -4375,73 +4404,135 @@ async function envoyerMessage() {
    MODERATION
 ========================================================= */
 
+async function enregistrerJournalModeration(action, cibleId = null, ciblePseudo = "", details = "") {
+    if (!utilisateur) return;
+    try {
+        await client.from("journal_moderation").insert({
+            moderateur_id: utilisateur.id,
+            moderateur_pseudo: pseudoActuel,
+            cible_id: cibleId,
+            cible_pseudo: ciblePseudo,
+            action: action,
+            details: details
+        });
+    } catch (e) { console.warn("Journal modération non enregistré :", e); }
+}
+
+async function verifierMute() {
+    if (!utilisateur) return false;
+    const { data, error } = await client.from("profils").select("muet_jusqu_a").eq("id", utilisateur.id).maybeSingle();
+    if (error) return false;
+    muetJusquA = data?.muet_jusqu_a || null;
+    if (muetJusquA && new Date(muetJusquA) > new Date()) {
+        alert("🔇 Tu es temporairement muet jusqu'au " + new Date(muetJusquA).toLocaleString("fr-FR") + ".");
+        return true;
+    }
+    if (muetJusquA) { await client.from("profils").update({muet_jusqu_a:null}).eq("id", utilisateur.id); muetJusquA=null; }
+    return false;
+}
+
+function antiSpamAutorise() {
+    const maintenant = Date.now();
+    if (maintenant - dernierEnvoiMessage < 1200) {
+        compteurSpamMessage++;
+    } else if (maintenant - dernierEnvoiMessage > 5000) {
+        compteurSpamMessage = 0;
+    }
+    dernierEnvoiMessage = maintenant;
+    if (compteurSpamMessage >= 4) {
+        alert("🚫 Anti-spam : attends quelques secondes avant d'envoyer d'autres messages.");
+        compteurSpamMessage = 0;
+        return false;
+    }
+    return true;
+}
+
+async function afficherClassement() {
+    fermerConversationPrivee();
+    fermerGroupe();
+    changerBoutonActif(btnClassement);
+    titrePage.textContent = "🏆 Classement des joueurs";
+    descriptionPage.textContent = "Points, victoires et statistiques de tous les joueurs.";
+    zoneEnvoi.style.display = "none";
+    listeMessages.innerHTML = '<div class="carte-classement"><h3>🏆 Classement</h3><p>Chargement...</p></div>';
+    const { data, error } = await client.from("stats_jeux").select("user_id,pseudo,points,parties,victoires,defaites,nuls,serie").order("points", {ascending:false}).order("victoires", {ascending:false}).order("parties", {ascending:true});
+    if (error) { listeMessages.innerHTML = '<div class="carte-classement"><h3>🏆 Classement</h3><p>Impossible de charger le classement : '+error.message+'</p><p>Vérifie que le SQL du classement a été exécuté dans Supabase.</p></div>'; return; }
+    const joueurs = data || [];
+    const top = joueurs.slice(0,3);
+    const medailles=["🥇","🥈","🥉"];
+    const podium=top.map((p,i)=>`<div class="classement-podium"><div class="medaille">${medailles[i]}</div><div class="rang-nom">@${p.pseudo||"joueur"}</div><div class="rang-points">${p.points||0} points · ${p.victoires||0} victoire(s)</div></div>`).join("");
+    listeMessages.innerHTML = `<div class="carte-classement"><h3>🏆 Classement des joueurs</h3><div class="classement-top3">${podium || '<p>Aucun joueur classé pour le moment.</p>'}</div><div class="filtre-classement"><select id="filtreClassement" class="champ"><option value="points">Trier par points</option><option value="victoires">Trier par victoires</option><option value="parties">Trier par parties</option><option value="serie">Trier par série</option></select><input id="rechercheClassement" class="champ" placeholder="🔎 Rechercher un joueur..."></div><div id="listeClassement"></div></div>`;
+    const zone=document.getElementById("listeClassement"), recherche=document.getElementById("rechercheClassement"), filtre=document.getElementById("filtreClassement");
+    function rendu(){
+        const q=(recherche.value||"").toLowerCase().trim(); const cle=filtre.value; const arr=joueurs.filter(p=>(p.pseudo||"").toLowerCase().includes(q)).sort((a,b)=>(Number(b[cle]||0)-Number(a[cle]||0))||((a.pseudo||"").localeCompare(b.pseudo||"")));
+        zone.innerHTML=arr.length?arr.map((p,i)=>`<div class="ligne-classement"><div class="rang-classement">${i+1}</div><div><strong>@${p.pseudo||"joueur"}</strong></div><div class="points-classement">⭐ ${p.points||0} pts</div><div class="stats-classement">🏆 ${p.victoires||0} V</div><div class="stats-classement">🎮 ${p.parties||0} parties</div><div class="stats-classement">🔥 ${p.serie||0}</div></div>`).join(""):'<p class="message-vide">Aucun joueur trouvé.</p>';
+    }
+    recherche.addEventListener("input",rendu); filtre.addEventListener("change",rendu); rendu();
+}
+
+async function enregistrerResultatJeu(typeJeu, partie) {
+    if (!partie || partie.statut !== "terminee") return;
+    const joueurs=[partie.joueur_1,partie.joueur_2].filter(Boolean);
+    const gagnant=partie.gagnant || null;
+    for (const id of joueurs) {
+        const {data:profil}=await client.from("profils").select("pseudo").eq("id",id).maybeSingle();
+        if (!profil) continue;
+        const {data:ancien}=await client.from("stats_jeux").select("*").eq("user_id",id).maybeSingle();
+        const a=ancien||{user_id:id,pseudo:profil.pseudo,points:0,parties:0,victoires:0,defaites:0,nuls:0,serie:0};
+        const gagne=gagnant && String(gagnant)===String(id); const nul=!gagnant;
+        const prochain={user_id:id,pseudo:profil.pseudo,points:Number(a.points||0)+(gagne?3:nul?1:0),parties:Number(a.parties||0)+1,victoires:Number(a.victoires||0)+(gagne?1:0),defaites:Number(a.defaites||0)+(!gagne&&!nul?1:0),nuls:Number(a.nuls||0)+(nul?1:0),serie:gagne?Number(a.serie||0)+1:0,updated_at:new Date().toISOString()};
+        await client.from("stats_jeux").upsert(prochain,{onConflict:"user_id"});
+    }
+}
+
 async function afficherModeration() {
     if (!estAdmin()) return;
-
     titrePage.textContent = "🛡️ Modération";
-    descriptionPage.textContent = "Admin : avertir et supprimer des messages · Chef : + bannir · Fondateur : + gérer les grades.";
+    descriptionPage.textContent = "Outils de modération, sanctions, anti-spam et historique.";
     zoneEnvoi.style.display = "none";
-
-    const { data: profils, error } = await client
-        .from("profils")
-        .select("id, pseudo, grade, banni_jusqu_a")
-        .order("pseudo", { ascending: true });
-
-    if (error) {
-        listeMessages.innerHTML = '<div class="message-vide">Impossible de charger la modération : ' + error.message + '</div>';
-        return;
-    }
-
-    const autres = (profils || []).filter(p => String(p.id) !== String(utilisateur.id));
-
-    listeMessages.innerHTML = `
-        <div class="carte-moderation">
-            <h3>🛡️ Centre de modération</h3>
-            <p>Ton grade : <strong>${nomGrade(gradeActuel)}</strong></p>
-            <div class="modo-ligne">
-                <select class="champ" id="modoUtilisateur">
-                    <option value="">Choisir un utilisateur...</option>
-                    ${autres.map(p => `<option value="${p.id}">@${p.pseudo} — ${nomGrade(p.grade || "arrivant")}</option>`).join("")}
-                </select>
-            </div>
-            <div class="modo-ligne">
-                <select class="champ" id="modoDuree">
-                    <option value="1">1 heure</option>
-                    <option value="24">24 heures</option>
-                    <option value="168">7 jours</option>
-                    <option value="720">30 jours</option>
-                    <option value="0">Débannir</option>
-                </select>
-                <button class="btn-danger-modo" id="btnBannirUtilisateur">🚫 Bannir</button>
-            </div>
-            ${estChef() ? `
-            <div class="modo-ligne">
-                <select class="champ" id="modoGrade">
-                    <option value="arrivant">👤 Arrivant</option>
-                    <option value="membre">🟢 Membre</option>
-                    <option value="admin">🔵 Admin</option>
-                    <option value="chef">🟣 Chef</option>
-                    ${estFondateur() ? '<option value="fondateur">👑 Fondateur</option>' : ''}
-                </select>
-                <button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button>
-            </div>` : '<p class="grade-connecte">Les Admins peuvent avertir et supprimer des messages. Les Chefs peuvent en plus bannir. Le Fondateur peut en plus gérer les grades.</p>'}
-            <div id="listeModeration"></div>
-        </div>`;
-
-    document.getElementById("btnBannirUtilisateur").onclick = () => modererBannissement();
-    if (document.getElementById("btnChangerGrade")) document.getElementById("btnChangerGrade").onclick = () => changerGradeModeration();
-
-    const zone = document.getElementById("listeModeration");
-    autres.forEach(p => {
-        const ligne = document.createElement("div");
-        ligne.className = "ligne-moderation";
-        const statut = p.banni_jusqu_a && new Date(p.banni_jusqu_a) > new Date()
-            ? "🚫 Banni jusqu'au " + new Date(p.banni_jusqu_a).toLocaleString("fr-FR")
-            : "✅ Actif";
-        ligne.innerHTML = `<div><strong>@${p.pseudo}</strong><div class="grade-connecte">${nomGrade(p.grade || "arrivant")} · ${statut}</div></div>`;
-        zone.appendChild(ligne);
-    });
+    const { data: profils, error } = await client.from("profils").select("id, pseudo, grade, banni_jusqu_a, muet_jusqu_a").order("pseudo", { ascending: true });
+    if (error) { listeMessages.innerHTML = '<div class="message-vide">Impossible de charger la modération : ' + error.message + '</div>'; return; }
+    const autres=(profils||[]).filter(p=>String(p.id)!==String(utilisateur.id));
+    listeMessages.innerHTML=`<div class="carte-moderation"><h3>🛡️ Centre de modération</h3><p>Ton grade : <strong>${nomGrade(gradeActuel)}</strong></p>
+      <div class="modo-outils">
+        <div class="modo-outil"><h4>📢 Message officiel</h4><p>Envoyer une notification à tous les utilisateurs.</p><button class="btn-outil-modo" id="btnMessageOfficiel">📢 Envoyer</button></div>
+        <div class="modo-outil"><h4>📋 Journal</h4><p>Consulter les actions de modération récentes.</p><button class="btn-outil-modo" id="btnJournalModo">📋 Voir le journal</button></div>
+        <div class="modo-outil"><h4>🚫 Utilisateurs bannis</h4><p>Voir les comptes actuellement bannis.</p><button class="btn-outil-modo danger" id="btnBannisModo">🚫 Afficher</button></div>
+        <div class="modo-outil"><h4>📊 Statistiques</h4><p>Voir les comptes et statistiques générales.</p><button class="btn-outil-modo" id="btnStatsModo">📊 Afficher</button></div>
+      </div>
+      <input id="rechercheModo" class="champ modo-recherche" placeholder="🔎 Rechercher un utilisateur...">
+      <div class="modo-ligne"><select class="champ" id="modoUtilisateur"><option value="">Choisir un utilisateur...</option>${autres.map(p=>`<option value="${p.id}">@${p.pseudo} — ${nomGrade(p.grade||"arrivant")}</option>`).join("")}</select></div>
+      <div class="modo-ligne"><select class="champ" id="modoDuree"><option value="1">1 heure</option><option value="24">24 heures</option><option value="168">7 jours</option><option value="720">30 jours</option><option value="0">Débannir</option></select><button class="btn-danger-modo" id="btnBannirUtilisateur">🚫 Bannir</button></div>
+      <div class="modo-ligne"><select class="champ" id="modoDureeMute"><option value="1">Mute 1 heure</option><option value="24">Mute 24 heures</option><option value="168">Mute 7 jours</option><option value="0">Retirer le mute</option></select><button class="btn-outil-modo" id="btnMuteUtilisateur">🔇 Mute</button></div>
+      ${estChef()?`<div class="modo-ligne"><select class="champ" id="modoGrade"><option value="arrivant">👤 Arrivant</option><option value="membre">🟢 Membre</option><option value="admin">🔵 Admin</option><option value="chef">🟣 Chef</option>${estFondateur()?'<option value="fondateur">👑 Fondateur</option>':''}</select><button class="btn-admin-modo" id="btnChangerGrade">🎖️ Changer le grade</button></div>`:''}
+      <div id="listeModeration"></div><div id="zoneOutilModeration"></div></div>`;
+    document.getElementById("btnBannirUtilisateur").onclick=()=>modererBannissement();
+    document.getElementById("btnMuteUtilisateur").onclick=()=>modererMute();
+    if(document.getElementById("btnChangerGrade"))document.getElementById("btnChangerGrade").onclick=()=>changerGradeModeration();
+    document.getElementById("btnMessageOfficiel").onclick=()=>envoyerMessageOfficiel();
+    document.getElementById("btnJournalModo").onclick=()=>afficherJournalModeration();
+    document.getElementById("btnBannisModo").onclick=()=>afficherBannis();
+    document.getElementById("btnStatsModo").onclick=()=>afficherStatsModeration();
+    const zone=document.getElementById("listeModeration"), recherche=document.getElementById("rechercheModo");
+    function rendu(){const q=(recherche.value||"").toLowerCase().trim(); zone.innerHTML=""; autres.filter(p=>(p.pseudo||"").toLowerCase().includes(q)).forEach(p=>{const ligne=document.createElement("div");ligne.className="ligne-moderation";const banni=p.banni_jusqu_a&&new Date(p.banni_jusqu_a)>new Date();const mute=p.muet_jusqu_a&&new Date(p.muet_jusqu_a)>new Date();ligne.innerHTML=`<div><strong>@${p.pseudo}</strong><div class="grade-connecte">${nomGrade(p.grade||"arrivant")} · ${banni?'🚫 Banni jusqu’au '+new Date(p.banni_jusqu_a).toLocaleString('fr-FR'):'✅ Actif'} ${mute?'<span class="badge-mute">🔇 Mute jusqu’au '+new Date(p.muet_jusqu_a).toLocaleString('fr-FR')+'</span>':''}</div></div>`;zone.appendChild(ligne);});}
+    recherche.addEventListener("input",rendu); rendu();
 }
+
+async function modererMute(){
+    if(!estChef()){alert("Seuls les Chefs et Fondateurs peuvent utiliser le mute.");return;}
+    const id=document.getElementById("modoUtilisateur")?.value, heures=Number(document.getElementById("modoDureeMute")?.value); if(!id){alert("Choisis un utilisateur.");return;}
+    const cible=(await client.from("profils").select("pseudo,grade").eq("id",id).maybeSingle()).data; if(!cible){alert("Utilisateur introuvable.");return;}
+    if(niveauGrade(cible.grade)>=niveauGrade(gradeActuel)){alert("Tu ne peux pas muter un utilisateur ayant un grade égal ou supérieur au tien.");return;}
+    const jusqu=heures===0?null:new Date(Date.now()+heures*3600000).toISOString(); const {error}=await client.from("profils").update({muet_jusqu_a:jusqu}).eq("id",id); if(error){alert("Impossible de modifier le mute : "+error.message);return;}
+    await enregistrerJournalModeration(heures===0?"démute":"mute",id,cible.pseudo,heures===0?"Mute retiré":heures+" heure(s)"); alert(heures===0?"Mute retiré.":"Utilisateur mis en mute."); afficherModeration();
+}
+
+async function afficherJournalModeration(){
+    const zone=document.getElementById("zoneOutilModeration"); if(!zone)return; const {data,error}=await client.from("journal_moderation").select("created_at,moderateur_pseudo,cible_pseudo,action,details").order("created_at",{ascending:false}).limit(100); if(error){zone.innerHTML='<div class="modo-outil"><p>Impossible de charger le journal : '+error.message+'</p></div>';return;} zone.innerHTML='<div class="modo-outil"><h4>📋 Journal de modération</h4><div class="journal-modo">'+((data||[]).map(x=>`<div class="journal-ligne"><strong>@${x.moderateur_pseudo||"?"}</strong> → ${x.action} → @${x.cible_pseudo||"?"}<br><span>${x.details||""}</span><div class="journal-date">${new Date(x.created_at).toLocaleString("fr-FR")}</div></div>`).join("")||'<p>Aucune action enregistrée.</p>')+'</div></div>';
+}
+async function afficherBannis(){const zone=document.getElementById("zoneOutilModeration");if(!zone)return;const {data,error}=await client.from("profils").select("pseudo,grade,banni_jusqu_a").not("banni_jusqu_a","is",null).order("banni_jusqu_a",{ascending:true});if(error){zone.innerHTML='<div class="modo-outil"><p>Impossible de charger les bannis : '+error.message+'</p></div>';return;}const actifs=(data||[]).filter(x=>new Date(x.banni_jusqu_a)>new Date());zone.innerHTML='<div class="modo-outil"><h4>🚫 Utilisateurs bannis</h4><div class="liste-bannis">'+(actifs.map(x=>`<div class="ligne-moderation"><div><strong>@${x.pseudo}</strong><div class="grade-connecte">${nomGrade(x.grade||"arrivant")} · jusqu’au ${new Date(x.banni_jusqu_a).toLocaleString("fr-FR")}</div></div></div>`).join("")||'<p>Aucun utilisateur banni.</p>')+'</div></div>';}
+async function afficherStatsModeration(){const zone=document.getElementById("zoneOutilModeration");if(!zone)return;const [{count:nbProfils},{count:nbMessages},{count:nbGroupes}]=await Promise.all([client.from("profils").select("id",{count:"exact",head:true}),client.from("messages").select("id",{count:"exact",head:true}),client.from("groupes").select("id",{count:"exact",head:true})]);zone.innerHTML=`<div class="modo-outil"><h4>📊 Statistiques du Chat</h4><p>👥 Comptes : <strong>${nbProfils||0}</strong></p><p>💬 Messages publics : <strong>${nbMessages||0}</strong></p><p>👨‍👩‍👧‍👦 Groupes : <strong>${nbGroupes||0}</strong></p></div>`;}
+async function envoyerMessageOfficiel(){if(!estFondateur()){alert("Seul le Fondateur peut envoyer un message officiel.");return;}const texte=prompt("Message officiel à envoyer à tous les utilisateurs :");if(!texte||!texte.trim())return;const {data:profils,error}=await client.from("profils").select("id");if(error){alert("Impossible de charger les utilisateurs : "+error.message);return;}const lignes=(profils||[]).filter(x=>String(x.id)!==String(utilisateur.id)).map(x=>({utilisateur_id:x.id,type:"officiel",titre:"📢 Message officiel du Fondateur",message:texte.trim(),lu:false}));if(lignes.length){const {error:e}=await client.from("notifications").insert(lignes);if(e){alert("Impossible d'envoyer le message officiel : "+e.message);return;}}await enregistrerJournalModeration("message officiel",null,"Tous les utilisateurs",texte.trim());alert("Message officiel envoyé.");}
 
 async function modererBannissement() {
     if (!estChef()) {
@@ -4459,6 +4550,7 @@ async function modererBannissement() {
     const jusqu = heures === 0 ? null : new Date(Date.now() + heures * 3600000).toISOString();
     const { error } = await client.from("profils").update({ banni_jusqu_a: jusqu, banni_par: utilisateur.id }).eq("id", id);
     if (error) { alert("Impossible de modifier le bannissement : " + error.message); return; }
+    await enregistrerJournalModeration(heures === 0 ? "débannissement" : "bannissement", id, cible.pseudo, heures === 0 ? "Ban retiré" : heures + " heure(s)");
     alert(heures === 0 ? "Utilisateur débanni." : "Utilisateur banni.");
     afficherModeration();
 }
@@ -4476,6 +4568,7 @@ async function changerGradeModeration() {
     }
     const { error } = await client.from("profils").update({ grade }).eq("id", id);
     if (error) { alert("Impossible de changer le grade : " + error.message); return; }
+    await enregistrerJournalModeration("changement de grade", id, cible.pseudo, "Nouveau grade : " + grade);
     alert("Grade modifié.");
     afficherModeration();
 }
@@ -4531,6 +4624,7 @@ async function avertirUtilisateur(utilisateurId, messageId, type) {
         return;
     }
 
+    await enregistrerJournalModeration("avertissement", utilisateurId, cible.pseudo, type === "groupe" ? "Message de groupe" : "Message");
     alert("Avertissement envoyé à @" + cible.pseudo + ".");
 }
 
@@ -4709,6 +4803,8 @@ btnJeux.addEventListener(
     "click",
     afficherJeux
 );
+
+btnClassement.addEventListener("click", afficherClassement);
 
 
 async function afficherJeux() {
@@ -5106,6 +5202,7 @@ async function jouerCoupMorpion(index) {
     }
 
     partieMorpionActuelle = data;
+    if (data.statut === "terminee") await enregistrerResultatJeu("morpion", {joueur_1:data.joueur_x,joueur_2:data.joueur_o,gagnant:data.gagnant,statut:data.statut});
     afficherPartieMorpion(data);
 }
 
@@ -5522,7 +5619,7 @@ function statutJeu(partie){
 
 async function majEtatJeu(partie,etat,extra={}){
     const {data,error}=await client.from("parties_jeux").update({etat:etat,...extra}).eq("id",partie.id).eq("statut","en_cours").select().single();
-    if(error){console.error(error);return null;} partieJeuActuelle=data; afficherPartieJeuSupplementaire(data); return data;
+    if(error){console.error(error);return null;} partieJeuActuelle=data; if(data.statut === "terminee") await enregistrerResultatJeu(data.type_jeu, data); afficherPartieJeuSupplementaire(data); return data;
 }
 
 function afficherPFC(partie){
@@ -9124,6 +9221,10 @@ async function supprimerMessageGroupe(id, forceModeration = false) {
         return;
     }
 
+    if (forceModeration) {
+        await enregistrerJournalModeration("suppression de message", null, "Utilisateur", "Message supprimé dans un groupe");
+    }
+
     document
         .querySelectorAll(`[data-message-id="${CSS.escape(String(id))}"]`)
         .forEach(function(element) { element.remove(); });
@@ -9350,6 +9451,10 @@ async function supprimerMessage(id,type,forceModeration=false){
         .from("reactions_messages")
         .delete()
         .eq("message_id", id);
+
+    if (forceModeration) {
+        await enregistrerJournalModeration("suppression de message", null, "Utilisateur", type === "public" ? "Message public supprimé" : "Message privé supprimé");
+    }
 
     /* Suppression immédiate à l'écran : aucun doublon ne peut rester. */
     document
