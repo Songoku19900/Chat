@@ -2153,6 +2153,29 @@ body.mode-sombre .btn-quitter-jeu {
     color: #fecaca;
 }
 
+
+/* =========================================================
+   GROUPES
+========================================================= */
+.bloc-groupes{background:var(--blanc);border:1px solid var(--bordure);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--ombre);}
+.carte-groupe{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bordure);border-radius:14px;margin-top:10px;background:var(--fond);}
+.avatar-groupe{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--primaire);color:#fff;font-size:22px;flex:0 0 46px;}
+.infos-groupe{flex:1;min-width:0;}
+.infos-groupe b{display:block;color:var(--texte);}
+.infos-groupe small{color:var(--texte-secondaire);}
+.actions-groupe{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+.btn-groupe{border:0;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;background:var(--primaire);color:#fff;}
+.btn-groupe-secondaire{border:1px solid var(--bordure);border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;background:var(--blanc);color:var(--texte);}
+.btn-groupe-danger{border:0;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;background:#dc2626;color:#fff;}
+.en-tete-groupe{display:flex;align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid var(--bordure);margin-bottom:10px;}
+.en-tete-groupe .avatar-groupe{width:42px;height:42px;flex-basis:42px;}
+.groupe-membres{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
+.pastille-membre{display:flex;align-items:center;gap:5px;background:var(--fond);border:1px solid var(--bordure);border-radius:999px;padding:5px 9px;color:var(--texte);font-size:13px;}
+.actions-membre-groupe{display:inline-flex;gap:4px;margin-left:4px;}
+.actions-membre-groupe button{border:0;background:transparent;cursor:pointer;padding:2px;}
+.invitation-groupe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid var(--bordure);border-radius:12px;margin-top:8px;}
+@media(max-width:750px){.carte-groupe{align-items:flex-start}.actions-groupe{width:100%;justify-content:stretch}.actions-groupe button{flex:1;min-height:44px}.en-tete-groupe{padding-top:4px}.pastille-membre{font-size:12px;}}
+
 </style>
 
 </head>
@@ -2301,6 +2324,12 @@ body.mode-sombre .btn-quitter-jeu {
         <button id="btnAmis">
             <span>👥</span>
             <span>Potes</span>
+        </button>
+
+
+        <button id="btnGroupes">
+            <span>👨‍👩‍👧‍👦</span>
+            <span>Groupes</span>
         </button>
 
 
@@ -2764,6 +2793,8 @@ let canalPresence = null;
 let canalMessagesPrives = null;
 
 let conversationActuelle = null;
+let groupeActuel = null;
+let canalMessagesGroupe = null;
 
 let utilisateurPriveActuel = null;
 
@@ -2948,6 +2979,9 @@ const btnDiscussion =
 
 const btnAmis =
     document.getElementById("btnAmis");
+
+const btnGroupes =
+    document.getElementById("btnGroupes");
 
 const btnJeux =
     document.getElementById("btnJeux");
@@ -4277,6 +4311,11 @@ async function envoyerMessage() {
         return;
     }
 
+    if (groupeActuel) {
+        await envoyerMessageGroupe(contenu);
+        return;
+    }
+
 
     btnEnvoyer.disabled = true;
 
@@ -4574,6 +4613,7 @@ if (btnModeration) btnModeration.addEventListener("click", afficherModeration);
 async function afficherAccueil() {
 
     fermerConversationPrivee();
+    fermerGroupe();
 
     changerBoutonActif(
         btnAccueil
@@ -4610,6 +4650,7 @@ btnDiscussion.addEventListener(
 async function afficherDiscussion() {
 
     fermerConversationPrivee();
+    fermerGroupe();
 
     changerBoutonActif(
         btnDiscussion
@@ -5806,6 +5847,8 @@ function afficherListePotes(
 async function ouvrirDiscussionPrivee(
     profil
 ) {
+
+    fermerGroupe();
 
     if (!utilisateur) {
         return;
@@ -8656,6 +8699,231 @@ function fermerConversationPrivee() {
 
 
 /* =========================================================
+   GROUPES
+========================================================= */
+
+function fermerGroupe() {
+    groupeActuel = null;
+    if (canalMessagesGroupe) {
+        client.removeChannel(canalMessagesGroupe);
+        canalMessagesGroupe = null;
+    }
+}
+
+async function chargerGroupes() {
+    if (!utilisateur) return [];
+    const { data, error } = await client
+        .from("groupes_membres")
+        .select("groupe_id, role, groupes(id, nom, photo_url, createur_id, created_at)")
+        .eq("profil_id", utilisateur.id);
+    if (error) {
+        console.error(error);
+        return [];
+    }
+    return (data || []).map(x => ({ ...(x.groupes || {}), role: x.role }))
+        .filter(x => x.id);
+}
+
+async function afficherGroupes() {
+    fermerConversationPrivee();
+    fermerGroupe();
+    zoneEnvoi.style.display = "none";
+    changerBoutonActif(btnGroupes);
+    titrePage.textContent = "👨‍👩‍👧‍👦 Mes groupes";
+    descriptionPage.textContent = "Crée des groupes, invite tes potes et discute ensemble.";
+    listeMessages.innerHTML = '<div class="message-vide">Chargement...</div>';
+
+    const groupes = await chargerGroupes();
+    const { data: invitations, error: errInv } = await client
+        .from("groupes_invitations")
+        .select("*, groupes(id, nom, photo_url)")
+        .eq("invite_id", utilisateur.id)
+        .eq("statut", "en_attente")
+        .order("created_at", { ascending: false });
+    if (errInv) console.error(errInv);
+
+    listeMessages.innerHTML = `
+        <div class="bloc-groupes">
+            <h3 style="margin-top:0">➕ Créer un groupe</h3>
+            <input id="nomNouveauGroupe" class="champ" maxlength="40" placeholder="Nom du groupe">
+            <button class="btn-groupe" id="btnCreerGroupe">Créer le groupe</button>
+            <p id="msgGroupe" style="margin-bottom:0"></p>
+        </div>
+        <div class="bloc-groupes">
+            <h3 style="margin-top:0">👥 Mes groupes (${groupes.length})</h3>
+            <div id="listeGroupesPerso"></div>
+        </div>
+        <div class="bloc-groupes">
+            <h3 style="margin-top:0">📩 Invitations (${(invitations || []).length})</h3>
+            <div id="invitationsGroupes"></div>
+        </div>`;
+
+    document.getElementById("btnCreerGroupe").onclick = creerGroupe;
+    const zone = document.getElementById("listeGroupesPerso");
+    if (!groupes.length) zone.innerHTML = '<div class="zone-demandes-vide">Tu n’as pas encore de groupe.</div>';
+    groupes.forEach(g => {
+        const d = document.createElement("div");
+        d.className = "carte-groupe";
+        d.innerHTML = `<div class="avatar-groupe">${g.photo_url ? `<img src="${esc(g.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">` : "👥"}</div><div class="infos-groupe"><b>${esc(g.nom)}</b><small>${g.role === "proprietaire" ? "Créateur" : "Membre"}</small></div>`;
+        const actions = document.createElement("div"); actions.className = "actions-groupe";
+        const ouvrir = document.createElement("button"); ouvrir.className = "btn-groupe"; ouvrir.textContent = "💬 Ouvrir"; ouvrir.onclick = () => ouvrirGroupe(g);
+        actions.appendChild(ouvrir);
+        d.appendChild(actions); zone.appendChild(d);
+    });
+
+    const zi = document.getElementById("invitationsGroupes");
+    if (!(invitations || []).length) zi.innerHTML = '<div class="zone-demandes-vide">Aucune invitation.</div>';
+    (invitations || []).forEach(inv => {
+        const d = document.createElement("div"); d.className = "invitation-groupe";
+        const nom = document.createElement("div"); nom.style.flex = "1"; nom.textContent = "👥 " + (inv.groupes?.nom || "Groupe");
+        const ok = document.createElement("button"); ok.className = "btn-groupe"; ok.textContent = "✓ Rejoindre"; ok.onclick = () => repondreInvitationGroupe(inv, true);
+        const no = document.createElement("button"); no.className = "btn-groupe-danger"; no.textContent = "✕ Refuser"; no.onclick = () => repondreInvitationGroupe(inv, false);
+        d.append(nom, ok, no); zi.appendChild(d);
+    });
+}
+
+async function creerGroupe() {
+    const input = document.getElementById("nomNouveauGroupe");
+    const msg = document.getElementById("msgGroupe");
+    const nom = input?.value.trim();
+    if (!nom) { msg.textContent = "❌ Donne un nom au groupe."; return; }
+    const { data: groupe, error } = await client.from("groupes").insert({ nom, createur_id: utilisateur.id }).select().single();
+    if (error) { console.error(error); msg.textContent = "❌ " + error.message; return; }
+    const { error: errMembre } = await client.from("groupes_membres").insert({ groupe_id: groupe.id, profil_id: utilisateur.id, role: "proprietaire" });
+    if (errMembre) { console.error(errMembre); msg.textContent = "❌ " + errMembre.message; return; }
+    await afficherGroupes();
+}
+
+async function repondreInvitationGroupe(inv, accepter) {
+    if (accepter) {
+        const { error: e1 } = await client.from("groupes_membres").upsert({ groupe_id: inv.groupe_id, profil_id: utilisateur.id, role: "membre" }, { onConflict: "groupe_id,profil_id" });
+        if (e1) { alert("Impossible de rejoindre le groupe : " + e1.message); return; }
+    }
+    const { error } = await client.from("groupes_invitations").update({ statut: accepter ? "acceptee" : "refusee" }).eq("id", inv.id);
+    if (error) { alert(error.message); return; }
+    await afficherGroupes();
+}
+
+async function ouvrirGroupe(groupe) {
+    fermerConversationPrivee();
+    fermerGroupe();
+    groupeActuel = groupe;
+    zoneEnvoi.style.display = "flex";
+    changerBoutonActif(btnGroupes);
+    titrePage.textContent = "👥 " + groupe.nom;
+    descriptionPage.textContent = "Discussion de groupe";
+    listeMessages.innerHTML = `<div class="en-tete-groupe"><button class="btn-retour" id="retourGroupes">← Retour</button><div class="avatar-groupe">${groupe.photo_url ? `<img src="${esc(groupe.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">` : "👥"}</div><div style="flex:1"><b>${esc(groupe.nom)}</b><div id="sousTitreGroupe" style="color:var(--texte-secondaire)">Chargement des membres...</div></div></div><div id="zoneMembresGroupe"></div><div id="listeMessagesGroupe"></div>`;
+    document.getElementById("retourGroupes").onclick = afficherGroupes;
+    await chargerMembresGroupe(groupe.id);
+    await chargerMessagesGroupe(groupe.id);
+    ecouterMessagesGroupe(groupe.id);
+    allerEnBas();
+    inputMessage.focus();
+}
+
+async function chargerMembresGroupe(groupeId) {
+    const { data, error } = await client.from("groupes_membres").select("profil_id, role, profils(id,pseudo,photo_url,couleur)").eq("groupe_id", groupeId);
+    if (error) { console.error(error); return []; }
+    const membres = data || [];
+    const zone = document.getElementById("zoneMembresGroupe");
+    const titre = document.getElementById("sousTitreGroupe");
+    if (titre) titre.textContent = `${membres.length} membre${membres.length > 1 ? "s" : ""}`;
+    if (!zone) return membres;
+    zone.innerHTML = `<div class="groupe-membres" id="pastillesMembres"></div><div id="actionsGroupeMembres"></div>`;
+    const pastilles = document.getElementById("pastillesMembres");
+    membres.forEach(m => {
+        const p = m.profils; if (!p) return;
+        const el = document.createElement("span"); el.className = "pastille-membre"; el.textContent = "@" + p.pseudo + (m.role === "proprietaire" ? " 👑" : "");
+        if (String(groupeActuel.createur_id) === String(utilisateur.id) && String(p.id) !== String(utilisateur.id)) {
+            const b = document.createElement("button"); b.textContent = "✕"; b.title = "Retirer"; b.onclick = () => retirerMembreGroupe(groupeId, p.id, p.pseudo); el.appendChild(b);
+        }
+        pastilles.appendChild(el);
+    });
+    const actions = document.getElementById("actionsGroupeMembres");
+    const inviter = document.createElement("button"); inviter.className = "btn-groupe"; inviter.textContent = "➕ Inviter un pote"; inviter.onclick = () => afficherInviterGroupe(groupeId, membres.map(m => String(m.profil_id)));
+    actions.appendChild(inviter);
+    if (String(groupeActuel.createur_id) !== String(utilisateur.id)) {
+        const quitter = document.createElement("button"); quitter.className = "btn-groupe-danger"; quitter.style.marginLeft = "8px"; quitter.textContent = "🚪 Quitter"; quitter.onclick = () => quitterGroupe(groupeId);
+        actions.appendChild(quitter);
+    }
+    return membres;
+}
+
+async function afficherInviterGroupe(groupeId, membresIds) {
+    const e = await etatAmis();
+    const ids = e.amis.filter(id => !membresIds.includes(String(id)));
+    const ps = await profils(ids);
+    if (!ps.length) { alert("Tous tes potes sont déjà dans ce groupe."); return; }
+    const nom = prompt("Écris le pseudo du pote à inviter :\n\n" + ps.map(p => "@" + p.pseudo).join("\n"));
+    if (!nom) return;
+    const cible = ps.find(p => p.pseudo.toLowerCase() === nom.replace(/^@/, "").trim().toLowerCase());
+    if (!cible) { alert("Pote introuvable dans la liste."); return; }
+    const { error } = await client.from("groupes_invitations").insert({ groupe_id: groupeId, inviteur_id: utilisateur.id, invite_id: cible.id, statut: "en_attente" });
+    if (error) { alert("Impossible d'inviter : " + error.message); return; }
+    await creerNotification(cible.id, "groupe_invitation", "👥 Invitation à un groupe", "@" + pseudoActuel + " t'a invité dans « " + groupeActuel.nom + " »." );
+    alert("Invitation envoyée à @" + cible.pseudo + ".");
+}
+
+async function retirerMembreGroupe(groupeId, profilId, pseudo) {
+    if (!confirm("Retirer @" + pseudo + " du groupe ?")) return;
+    if (!groupeActuel || String(groupeActuel.createur_id) !== String(utilisateur.id)) return;
+    const { error } = await client.from("groupes_membres").delete().eq("groupe_id", groupeId).eq("profil_id", profilId);
+    if (error) { alert(error.message); return; }
+    await chargerMembresGroupe(groupeId);
+}
+
+async function quitterGroupe(groupeId) {
+    if (!confirm("Quitter ce groupe ?")) return;
+    const { error } = await client.from("groupes_membres").delete().eq("groupe_id", groupeId).eq("profil_id", utilisateur.id);
+    if (error) { alert(error.message); return; }
+    await afficherGroupes();
+}
+
+async function chargerMessagesGroupe(groupeId) {
+    const zone = document.getElementById("listeMessagesGroupe"); if (!zone) return;
+    const { data, error } = await client.from("messages_groupes").select("*").eq("groupe_id", groupeId).order("created_at", { ascending: true }).limit(100);
+    if (error) { console.error(error); zone.innerHTML = `<div class="message-vide">Impossible de charger les messages : ${esc(error.message)}</div>`; return; }
+    zone.innerHTML = "";
+    if (!data?.length) { zone.innerHTML = '<div class="message-vide">Aucun message. Commence la discussion !</div>'; return; }
+    data.forEach(afficherMessageGroupe);
+}
+
+function afficherMessageGroupe(message) {
+    const zone = document.getElementById("listeMessagesGroupe"); if (!zone) return;
+    const bloc = document.createElement("div"); bloc.className = String(message.auteur_id) === String(utilisateur.id) ? "message-prive moi" : "message-prive"; bloc.dataset.messageId = message.id;
+    const bulle = document.createElement("div"); bulle.className = "bulle-privee";
+    const nom = document.createElement("div"); nom.className = "nom-prive"; nom.textContent = "@" + (message.pseudo || "Utilisateur");
+    const texte = document.createElement("div"); texte.className = "texte-prive"; texte.textContent = message.texte || "";
+    const date = document.createElement("div"); date.className = "date-prive"; date.textContent = message.created_at ? new Date(message.created_at).toLocaleString("fr-FR") : "";
+    bulle.append(nom, texte, date); bloc.appendChild(bulle); zone.appendChild(bloc);
+}
+
+async function envoyerMessageGroupe(contenu) {
+    if (!groupeActuel || !utilisateur) return;
+    btnEnvoyer.disabled = true;
+    const { error } = await client.from("messages_groupes").insert({ groupe_id: groupeActuel.id, auteur_id: utilisateur.id, pseudo: pseudoActuel, texte: contenu });
+    if (error) { alert("Impossible d'envoyer le message du groupe : " + error.message); console.error(error); }
+    else inputMessage.value = "";
+    btnEnvoyer.disabled = false;
+}
+
+function ecouterMessagesGroupe(groupeId) {
+    if (canalMessagesGroupe) client.removeChannel(canalMessagesGroupe);
+    canalMessagesGroupe = client.channel("groupe-messages-" + groupeId)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages_groupes", filter: "groupe_id=eq." + groupeId }, payload => {
+            if (!groupeActuel || String(groupeActuel.id) !== String(groupeId)) return;
+            const deja = document.querySelector(`[data-message-id="${CSS.escape(String(payload.new.id))}"]`);
+            if (!deja) afficherMessageGroupe(payload.new);
+            allerEnBas();
+        })
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages_groupes", filter: "groupe_id=eq." + groupeId }, payload => {
+            const el = document.querySelector(`[data-message-id="${CSS.escape(String(payload.old?.id || ""))}"]`); if (el) el.remove();
+        }).subscribe();
+}
+
+btnGroupes.addEventListener("click", afficherGroupes);
+
+/* =========================================================
    BOUTON ACTIF
 ========================================================= */
 
@@ -8674,6 +8942,8 @@ function changerBoutonActif(
     btnAmis.classList.remove(
         "actif"
     );
+
+    if (btnGroupes) btnGroupes.classList.remove("actif");
 
 
     if (bouton) {
