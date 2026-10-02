@@ -8860,6 +8860,16 @@ async function afficherGroupes() {
         const actions = document.createElement("div"); actions.className = "actions-groupe";
         const ouvrir = document.createElement("button"); ouvrir.className = "btn-groupe"; ouvrir.textContent = "💬 Ouvrir"; ouvrir.onclick = () => ouvrirGroupe(g);
         actions.appendChild(ouvrir);
+
+        if (g.role === "proprietaire" && String(g.createur_id) === String(utilisateur.id)) {
+            const supprimer = document.createElement("button");
+            supprimer.className = "btn-groupe-danger";
+            supprimer.textContent = "🗑️ Supprimer";
+            supprimer.title = "Supprimer définitivement le groupe";
+            supprimer.onclick = () => supprimerGroupe(g);
+            actions.appendChild(supprimer);
+        }
+
         d.appendChild(actions); zone.appendChild(d);
     });
 
@@ -8962,6 +8972,48 @@ async function retirerMembreGroupe(groupeId, profilId, pseudo) {
     const { error } = await client.from("groupes_membres").delete().eq("groupe_id", groupeId).eq("profil_id", profilId);
     if (error) { alert(error.message); return; }
     await chargerMembresGroupe(groupeId);
+}
+
+async function supprimerGroupe(groupe) {
+    if (!groupe || !utilisateur) return;
+
+    if (String(groupe.createur_id) !== String(utilisateur.id)) {
+        alert("Seul le créateur du groupe peut le supprimer.");
+        return;
+    }
+
+    const confirmation = confirm(
+        "Supprimer définitivement le groupe « " + groupe.nom + " » ?\n\n" +
+        "Tous les membres, invitations et messages de ce groupe seront supprimés.\n\n" +
+        "Cette action est irréversible."
+    );
+
+    if (!confirmation) return;
+
+    const { data: groupeSupprime, error } = await client
+        .from("groupes")
+        .delete()
+        .eq("id", groupe.id)
+        .eq("createur_id", utilisateur.id)
+        .select("id");
+
+    if (error) {
+        console.error(error);
+        alert("Impossible de supprimer le groupe : " + error.message);
+        return;
+    }
+
+    if (!groupeSupprime || groupeSupprime.length === 0) {
+        alert("Le groupe n'a pas pu être supprimé. Seul son créateur peut le supprimer.");
+        return;
+    }
+
+    if (groupeActuel && String(groupeActuel.id) === String(groupe.id)) {
+        fermerGroupe();
+    }
+
+    alert("Le groupe « " + groupe.nom + " » a été supprimé.");
+    await afficherGroupes();
 }
 
 async function quitterGroupe(groupeId) {
