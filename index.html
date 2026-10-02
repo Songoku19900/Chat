@@ -2091,6 +2091,47 @@ header {
 
 
 /* =========================================================
+   CORRECTION HEADER / NOTIFICATIONS MOBILE
+========================================================= */
+header {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.logo-chat {
+    flex: 0 0 auto;
+    min-width: max-content;
+}
+.notifications-wrapper {
+    flex: 0 0 auto;
+    z-index: 30;
+}
+@media (max-width: 700px) {
+    header {
+        padding: 10px;
+        gap: 8px;
+    }
+    .logo-chat {
+        flex: 1 1 100%;
+        width: 100%;
+        margin-bottom: 2px;
+    }
+    .notifications-wrapper {
+        order: 2;
+    }
+    #btnNotifications {
+        min-height: 42px;
+        white-space: nowrap;
+    }
+    #btnActiverPush, #btnModeSombre, .btn-deconnexion {
+        min-height: 42px;
+    }
+}
+
+/* =========================================================
    NOTIFICATIONS
 ========================================================= */
 
@@ -2101,6 +2142,7 @@ header {
 
 #btnNotifications {
     position: relative;
+    z-index: 5;
     padding: 9px 14px;
     background: var(--primaire-clair);
     color: var(--primaire);
@@ -2319,8 +2361,9 @@ body.mode-sombre .btn-quitter-jeu {
 @media (max-width: 750px) {
     .btn-menu-mobile {
         position: fixed !important;
-        top: calc(10px + env(safe-area-inset-top)) !important;
-        left: 10px !important;
+        bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+        right: 10px !important;
+        left: auto !important;
         z-index: 10000 !important;
         width: auto !important;
         min-width: 92px !important;
@@ -2335,7 +2378,7 @@ body.mode-sombre .btn-quitter-jeu {
 
     #menuNavigation {
         position: fixed !important;
-        top: calc(62px + env(safe-area-inset-top)) !important;
+        bottom: calc(72px + env(safe-area-inset-bottom)) !important;
         left: 10px !important;
         right: 10px !important;
         z-index: 9999 !important;
