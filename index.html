@@ -9039,7 +9039,7 @@ async function chargerMembresGroupe(groupeId) {
         pastilles.appendChild(el);
     });
     const actions = document.getElementById("actionsGroupeMembres");
-    const inviter = document.createElement("button"); inviter.className = "btn-groupe"; inviter.textContent = "➕ Inviter un pote"; inviter.onclick = () => afficherInviterGroupe(groupeId, membres.map(m => String(m.profil_id)));
+    const inviter = document.createElement("button"); inviter.className = "btn-groupe"; inviter.textContent = "➕ Inviter quelqu’un"; inviter.onclick = () => afficherInviterGroupe(groupeId, membres.map(m => String(m.profil_id)));
     actions.appendChild(inviter);
     if (String(groupeActuel.createur_id) !== String(utilisateur.id)) {
         const quitter = document.createElement("button"); quitter.className = "btn-groupe-danger"; quitter.style.marginLeft = "8px"; quitter.textContent = "🚪 Quitter"; quitter.onclick = () => quitterGroupe(groupeId);
@@ -9049,17 +9049,78 @@ async function chargerMembresGroupe(groupeId) {
 }
 
 async function afficherInviterGroupe(groupeId, membresIds) {
-    const e = await etatAmis();
-    const ids = e.amis.filter(id => !membresIds.includes(String(id)));
-    const ps = await profils(ids);
-    if (!ps.length) { alert("Tous tes potes sont déjà dans ce groupe."); return; }
-    const nom = prompt("Écris le pseudo du pote à inviter :\n\n" + ps.map(p => "@" + p.pseudo).join("\n"));
+    if (!utilisateur) return;
+
+    const { data: ps, error: erreurProfils } = await client
+        .from("profils")
+        .select("id,pseudo,photo_url,couleur")
+        .neq("id", utilisateur.id)
+        .order("pseudo", { ascending: true });
+
+    if (erreurProfils) {
+        alert("Impossible de charger les utilisateurs : " + erreurProfils.message);
+        return;
+    }
+
+    const idsMembres = (membresIds || []).map(String);
+    const disponibles = (ps || []).filter(p => !idsMembres.includes(String(p.id)));
+
+    if (!disponibles.length) {
+        alert("Tous les utilisateurs sont déjà dans ce groupe.");
+        return;
+    }
+
+    const nom = prompt(
+        "Écris le pseudo de la personne à inviter :\n\n" +
+        disponibles.map(p => "@" + p.pseudo).join("\n")
+    );
     if (!nom) return;
-    const cible = ps.find(p => p.pseudo.toLowerCase() === nom.replace(/^@/, "").trim().toLowerCase());
-    if (!cible) { alert("Pote introuvable dans la liste."); return; }
-    const { error } = await client.from("groupes_invitations").insert({ groupe_id: groupeId, inviteur_id: utilisateur.id, invite_id: cible.id, statut: "en_attente" });
-    if (error) { alert("Impossible d'inviter : " + error.message); return; }
-    await creerNotification(cible.id, "groupe_invitation", "👥 Invitation à un groupe", "@" + pseudoActuel + " t'a invité dans « " + groupeActuel.nom + " »." );
+
+    const recherche = nom.replace(/^@/, "").trim().toLowerCase();
+    const cible = disponibles.find(p => (p.pseudo || "").toLowerCase() === recherche);
+
+    if (!cible) {
+        alert("Utilisateur introuvable dans la liste.");
+        return;
+    }
+
+    const { data: invitationExistante, error: erreurInvitation } = await client
+        .from("groupes_invitations")
+        .select("id,statut")
+        .eq("groupe_id", groupeId)
+        .eq("invite_id", cible.id)
+        .eq("statut", "en_attente")
+        .maybeSingle();
+
+    if (erreurInvitation) {
+        alert("Impossible de vérifier l'invitation : " + erreurInvitation.message);
+        return;
+    }
+
+    if (invitationExistante) {
+        alert("Une invitation est déjà en attente pour @" + cible.pseudo + ".");
+        return;
+    }
+
+    const { error } = await client.from("groupes_invitations").insert({
+        groupe_id: groupeId,
+        inviteur_id: utilisateur.id,
+        invite_id: cible.id,
+        statut: "en_attente"
+    });
+
+    if (error) {
+        alert("Impossible d'inviter : " + error.message);
+        return;
+    }
+
+    await creerNotification(
+        cible.id,
+        "groupe_invitation",
+        "👥 Invitation à un groupe",
+        "@" + pseudoActuel + " t'a invité dans « " + groupeActuel.nom + " »."
+    );
+
     alert("Invitation envoyée à @" + cible.pseudo + ".");
 }
 
