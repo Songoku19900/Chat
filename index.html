@@ -2189,6 +2189,8 @@ body.mode-sombre .btn-quitter-jeu {
 .actions-membre-groupe{display:inline-flex;gap:4px;margin-left:4px;}
 .actions-membre-groupe button{border:0;background:transparent;cursor:pointer;padding:2px;}
 .invitation-groupe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid var(--bordure);border-radius:12px;margin-top:8px;}
+
+.profil-stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.profil-stat{background:var(--fond);border:1px solid var(--bordure);border-radius:12px;padding:12px;text-align:center}.profil-stat b{display:block;font-size:18px;color:var(--texte)}.profil-stat span{display:block;color:var(--texte-secondaire);font-size:12px;margin-top:4px}@media(max-width:600px){.profil-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:750px){.carte-groupe{align-items:flex-start}.actions-groupe{width:100%;justify-content:stretch}.actions-groupe button{flex:1;min-height:44px}.en-tete-groupe{padding-top:4px}.pastille-membre{font-size:12px;}}
 
 </style>
@@ -2781,6 +2783,7 @@ let utilisateur = null;
 let pseudoActuel = "";
 
 let gradeActuel = "arrivant";
+let derniereConnexionActuelle = null;
 let muetJusquA = null;
 let dernierEnvoiMessage = 0;
 let compteurSpamMessage = 0;
@@ -3352,6 +3355,8 @@ async function ouvrirApplication(profil) {
 
     pseudoActuel = profil.pseudo;
     gradeActuel = profil.grade || "arrivant";
+    derniereConnexionActuelle = profil.derniere_connexion || null;
+    try { await client.from("profils").update({ derniere_connexion: new Date().toISOString() }).eq("id", profil.id); derniereConnexionActuelle = new Date().toISOString(); } catch(e) { console.warn("Dernière connexion non enregistrée", e); }
 
     if (btnModeration) {
         btnModeration.style.display = estAdmin() ? "flex" : "none";
@@ -8959,6 +8964,7 @@ async function afficherGroupes() {
         actions.appendChild(ouvrir);
 
         if (g.role === "proprietaire" && String(g.createur_id) === String(utilisateur.id)) {
+            const modifier = document.createElement("button"); modifier.className = "btn-groupe-secondaire"; modifier.textContent = "✏️ Modifier"; modifier.onclick = () => modifierGroupe(g); actions.appendChild(modifier);
             const supprimer = document.createElement("button");
             supprimer.className = "btn-groupe-danger";
             supprimer.textContent = "🗑️ Supprimer";
@@ -8979,6 +8985,39 @@ async function afficherGroupes() {
         const no = document.createElement("button"); no.className = "btn-groupe-danger"; no.textContent = "✕ Refuser"; no.onclick = () => repondreInvitationGroupe(inv, false);
         d.append(nom, ok, no); zi.appendChild(d);
     });
+}
+
+async function modifierGroupe(groupe){
+    if(String(groupe.createur_id)!==String(utilisateur.id)){alert("Seul le créateur peut modifier le groupe.");return;}
+    const nom=prompt("Nouveau nom du groupe :",groupe.nom||"");
+    if(nom===null)return;
+    const nomPropre=nom.trim();
+    if(!nomPropre){alert("Le nom ne peut pas être vide.");return;}
+    const changerPhoto=confirm("Veux-tu modifier la photo du groupe ?");
+    let photo=groupe.photo_url||null;
+    if(changerPhoto){
+        const input=document.createElement("input");
+        input.type="file"; input.accept="image/*"; input.style.display="none";
+        document.body.appendChild(input);
+        const choisir=new Promise(resolve=>{input.onchange=()=>resolve(input.files?.[0]||null);});
+        input.click();
+        const fichier=await choisir;
+        input.remove();
+        if(fichier){
+            if(fichier.size>5*1024*1024){alert("La photo doit faire moins de 5 Mo.");return;}
+            const extension=(fichier.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+            const chemin="groupes/"+groupe.id+"/photo-"+Date.now()+"."+extension;
+            const upload=await client.storage.from("images").upload(chemin,fichier,{contentType:fichier.type,upsert:true});
+            if(upload.error){alert("Impossible d’envoyer la photo : "+upload.error.message);return;}
+            photo=client.storage.from("images").getPublicUrl(chemin).data.publicUrl;
+        }
+    }
+    const {data,error}=await client.from("groupes").update({nom:nomPropre,photo_url:photo}).eq("id",groupe.id).eq("createur_id",utilisateur.id).select("*").maybeSingle();
+    if(error){alert("Impossible de modifier le groupe : "+error.message);return;}
+    if(!data){alert("Le groupe n’a pas été modifié. Vérifie les permissions.");return;}
+    Object.assign(groupe,data);
+    if(groupeActuel && String(groupeActuel.id)===String(groupe.id))groupeActuel={...groupe};
+    if(groupeActuel && String(groupeActuel.id)===String(groupe.id))await ouvrirGroupe(groupeActuel);else await afficherGroupes();
 }
 
 async function creerGroupe() {
@@ -9011,8 +9050,9 @@ async function ouvrirGroupe(groupe) {
     changerBoutonActif(btnGroupes);
     titrePage.textContent = "👥 " + groupe.nom;
     descriptionPage.textContent = "Discussion de groupe";
-    listeMessages.innerHTML = `<div class="en-tete-groupe"><button class="btn-retour" id="retourGroupes">← Retour</button><div class="avatar-groupe">${groupe.photo_url ? `<img src="${esc(groupe.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">` : "👥"}</div><div style="flex:1"><b>${esc(groupe.nom)}</b><div id="sousTitreGroupe" style="color:var(--texte-secondaire)">Chargement des membres...</div></div></div><div id="zoneMembresGroupe"></div><div id="listeMessagesGroupe"></div>`;
+    listeMessages.innerHTML = `<div class="en-tete-groupe"><button class="btn-retour" id="retourGroupes">← Retour</button><div class="avatar-groupe">${groupe.photo_url ? `<img src="${esc(groupe.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">` : "👥"}</div><div style="flex:1"><b>${esc(groupe.nom)}</b><div id="sousTitreGroupe" style="color:var(--texte-secondaire)">Chargement des membres...</div></div>${String(groupe.createur_id)===String(utilisateur.id)?'<button class="btn-groupe-secondaire" id="modifierGroupeOuvert">✏️ Modifier</button>':''}</div><div id="zoneMembresGroupe"></div><div id="listeMessagesGroupe"></div>`;
     document.getElementById("retourGroupes").onclick = afficherGroupes;
+    document.getElementById("modifierGroupeOuvert")?.addEventListener("click",()=>modifierGroupe(groupe));
     await chargerMembresGroupe(groupe.id);
     await chargerMessagesGroupe(groupe.id);
     ecouterMessagesGroupe(groupe.id);
@@ -9368,13 +9408,58 @@ function allerEnBas() {
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 function avatarMini(p,big=false){let c=p.couleur||"#4f46e5";return p.photo_url?`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c}"><img src="${esc(p.photo_url)}"></div>`:`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c};color:#fff">${esc((p.pseudo||"?")[0].toUpperCase())}</div>`;}
 function initialiserFonctionsSociales(){if(!utilisateur)return;if(!btnProfil){btnProfil=document.createElement("button");btnProfil.id="btnProfil";btnProfil.innerHTML="<span>⚙️</span><span>Profil</span>";btnProfil.onclick=afficherProfil;btnAmis.parentNode.insertBefore(btnProfil,btnJeux);}if(!badgeDemandesAmis){badgeDemandesAmis=document.createElement("span");badgeDemandesAmis.className="menu-badge";badgeDemandesAmis.style.display="none";btnAmis.appendChild(badgeDemandesAmis);}chargerBadgeDemandesAmis();initialiserCanalAmis();initialiserCanalReactions();}
-function afficherProfil(){fermerConversationPrivee();zoneEnvoi.style.display="none";changerBoutonActif(btnProfil);titrePage.textContent="⚙️ Mon profil";descriptionPage.textContent="Personnalise ton profil.";let c=utilisateur.couleur||"#4f46e5",photo=utilisateur.photo_url||"";listeMessages.innerHTML=`<div class="carte-profil">${avatarMini(utilisateur,true)}<div><h3 style="margin:0 0 5px">@${esc(utilisateur.pseudo)}</h3><div style="color:var(--texte-secondaire)">Ton compte Chat</div></div></div><div class="profil-formulaire"><h3>🎨 Apparence</h3><label>Couleur du profil</label><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><input id="profilCouleur" class="color-picker" type="color" value="${esc(c)}"><span id="profilCouleurTexte">${esc(c)}</span></div><label style="display:block;margin-top:16px">Photo de profil</label><input id="profilPhoto" class="champ" type="file" accept="image/*"><input id="profilPhotoUrl" class="champ" type="url" placeholder="Ou colle une URL d'image" value="${esc(photo)}"><div class="profil-actions" style="margin-top:15px"><button class="btn-profil-save" id="saveProfil">💾 Enregistrer</button><button class="btn-profil-secondaire" id="removePhoto">🗑️ Retirer</button></div><p id="profilMsg"></p></div>`;document.getElementById("profilCouleur").oninput=e=>document.getElementById("profilCouleurTexte").textContent=e.target.value;document.getElementById("saveProfil").onclick=sauverProfil;document.getElementById("removePhoto").onclick=async()=>{document.getElementById("profilPhotoUrl").value="";await sauverProfil(true);};}
+async function afficherProfil(){
+    fermerConversationPrivee();
+    zoneEnvoi.style.display="none";
+    changerBoutonActif(btnProfil);
+    titrePage.textContent="⚙️ Mon profil";
+    descriptionPage.textContent="Ton profil, tes informations et tes statistiques.";
+    const c=utilisateur.couleur||"#4f46e5", photo=utilisateur.photo_url||"";
+    let stats={parties:0,victoires:0,defaites:0,nuls:0,points:0,serie:0};
+    try{const r=await client.from("stats_jeux").select("parties,victoires,defaites,nuls,points,serie").eq("user_id",utilisateur.id).maybeSingle();if(r.data)stats={...stats,...r.data};}catch(e){console.warn(e);}
+    const bio=utilisateur.bio||"";
+    const derniere=utilisateur.derniere_connexion||derniereConnexionActuelle;
+    const dateDerniere=derniere?new Date(derniere).toLocaleString("fr-FR"):"Jamais enregistrée";
+    listeMessages.innerHTML=`
+      <div class="carte-profil" style="align-items:center;">
+        ${avatarMini(utilisateur,true)}
+        <div style="flex:1;min-width:0"><h3 style="margin:0 0 5px">@${esc(utilisateur.pseudo)}</h3><div style="color:var(--texte-secondaire)">${nomGrade(utilisateur.grade||gradeActuel)}</div><div style="margin-top:7px;color:var(--texte-secondaire);font-size:13px">🕒 Dernière connexion : ${esc(dateDerniere)}</div></div>
+      </div>
+      <div class="profil-formulaire">
+        <h3>📝 Présentation</h3>
+        <label>Bio</label>
+        <textarea id="profilBio" class="champ" maxlength="300" rows="4" placeholder="Parle un peu de toi...">${esc(bio)}</textarea>
+        <small style="color:var(--texte-secondaire)">Maximum 300 caractères.</small>
+        <h3 style="margin-top:22px">📊 Mes statistiques</h3>
+        <div class="profil-stats-grid">
+          <div class="profil-stat"><b>⭐ ${Number(stats.points||0)}</b><span>Points</span></div>
+          <div class="profil-stat"><b>🎮 ${Number(stats.parties||0)}</b><span>Parties</span></div>
+          <div class="profil-stat"><b>🏆 ${Number(stats.victoires||0)}</b><span>Victoires</span></div>
+          <div class="profil-stat"><b>❌ ${Number(stats.defaites||0)}</b><span>Défaites</span></div>
+          <div class="profil-stat"><b>🤝 ${Number(stats.nuls||0)}</b><span>Nuls</span></div>
+          <div class="profil-stat"><b>🔥 ${Number(stats.serie||0)}</b><span>Série</span></div>
+        </div>
+        <h3 style="margin-top:22px">🎨 Apparence</h3>
+        <label>Couleur du profil</label>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><input id="profilCouleur" class="color-picker" type="color" value="${esc(c)}"><span id="profilCouleurTexte">${esc(c)}</span></div>
+        <label style="display:block;margin-top:16px">Photo de profil</label>
+        <input id="profilPhoto" class="champ" type="file" accept="image/*">
+        <input id="profilPhotoUrl" class="champ" type="url" placeholder="Ou colle une URL d'image" value="${esc(photo)}">
+        <div class="profil-actions" style="margin-top:15px"><button class="btn-profil-save" id="saveProfil">💾 Enregistrer</button><button class="btn-profil-secondaire" id="removePhoto">🗑️ Retirer</button></div>
+        <p id="profilMsg"></p>
+      </div>`;
+    document.getElementById("profilCouleur").oninput=e=>document.getElementById("profilCouleurTexte").textContent=e.target.value;
+    document.getElementById("saveProfil").onclick=sauverProfil;
+    document.getElementById("removePhoto").onclick=async()=>{document.getElementById("profilPhotoUrl").value="";document.getElementById("profilPhoto").value="";await sauverProfil(true);};
+}
+
 async function sauverProfil(){
     const msg = document.getElementById("profilMsg");
     if (!msg || !utilisateur) return;
 
     try {
         const couleur = document.getElementById("profilCouleur").value;
+        const bio = (document.getElementById("profilBio")?.value || "").trim();
         let photo = document.getElementById("profilPhotoUrl").value.trim();
         const fichier = document.getElementById("profilPhoto").files?.[0];
 
@@ -9407,7 +9492,8 @@ async function sauverProfil(){
             .from("profils")
             .update({
                 couleur: couleur,
-                photo_url: photo || null
+                photo_url: photo || null,
+                bio: bio || null
             })
             .eq("id", utilisateur.id)
             .select("*")
