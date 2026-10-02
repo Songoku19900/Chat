@@ -1325,6 +1325,126 @@ header {
     }
 }
 
+@media (min-width: 751px) {
+    .btn-menu-mobile { display: none !important; }
+    #menuNavigation { display: block; }
+}
+
+@media (max-width: 750px) {
+
+    /* ===== Téléphone : menu dépliable ===== */
+    .menu {
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important;
+        display: block !important;
+        background: var(--blanc);
+        border-top: 1px solid var(--bordure) !important;
+        box-shadow: 0 -5px 20px rgba(0,0,0,.10);
+    }
+
+    .btn-menu-mobile {
+        display: flex !important;
+        width: 100%;
+        height: 48px !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        font-size: 15px !important;
+        font-weight: bold;
+        background: var(--fond);
+        border: 1px solid var(--bordure);
+    }
+
+    .btn-menu-mobile span { font-size: 15px !important; }
+
+    #menuNavigation {
+        display: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        padding: 8px 0 4px;
+    }
+
+    #menuNavigation.menu-ouvert { display: grid; }
+
+    #menuNavigation button {
+        width: 100%;
+        min-width: 0;
+        height: 52px;
+        margin: 0;
+        padding: 6px;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        white-space: normal;
+        text-align: center;
+    }
+
+    #menuNavigation button span {
+        display: inline;
+        font-size: 19px;
+    }
+
+    /* La navigation ne masque plus le contenu du groupe */
+    .carte-groupe {
+        display: grid !important;
+        grid-template-columns: 52px minmax(0, 1fr) !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 12px !important;
+    }
+
+    .carte-groupe .avatar-groupe {
+        width: 52px !important;
+        height: 52px !important;
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .carte-groupe .infos-groupe {
+        min-width: 0 !important;
+        width: 100% !important;
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .carte-groupe .infos-groupe b {
+        display: block !important;
+        width: 100%;
+        font-size: 17px;
+        line-height: 1.25;
+        white-space: normal !important;
+        overflow: visible !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+    }
+
+    .carte-groupe .infos-groupe small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .carte-groupe .actions-groupe {
+        width: 100% !important;
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    .carte-groupe .actions-groupe button {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 42px;
+        white-space: normal;
+        margin: 0;
+    }
+}
+
 @media (max-width: 750px) {
 
     /* ===== Téléphone : navigation en bas ===== */
@@ -2191,7 +2311,52 @@ body.mode-sombre .btn-quitter-jeu {
 .invitation-groupe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid var(--bordure);border-radius:12px;margin-top:8px;}
 
 .profil-stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.profil-stat{background:var(--fond);border:1px solid var(--bordure);border-radius:12px;padding:12px;text-align:center}.profil-stat b{display:block;font-size:18px;color:var(--texte)}.profil-stat span{display:block;color:var(--texte-secondaire);font-size:12px;margin-top:4px}@media(max-width:600px){.profil-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:750px){.carte-groupe{align-items:flex-start}.actions-groupe{width:100%;justify-content:stretch}.actions-groupe button{flex:1;min-height:44px}.en-tete-groupe{padding-top:4px}.pastille-membre{font-size:12px;}}
+@media(max-width:750px){.carte-groupe{align-items:center;flex-wrap:wrap;gap:10px}.carte-groupe .infos-groupe{flex:1 1 calc(100% - 68px);min-width:0}.carte-groupe .infos-groupe b{display:block;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}.actions-groupe{width:100%;flex:0 0 100%;justify-content:stretch;display:flex}.actions-groupe button{flex:1 1 0;min-height:44px;min-width:0;white-space:normal}.en-tete-groupe{padding-top:4px;flex-wrap:wrap}.pastille-membre{font-size:12px;}}
+
+
+
+/* MENU MOBILE FIXE - visible en haut de l'ecran */
+@media (max-width: 750px) {
+    .btn-menu-mobile {
+        position: fixed !important;
+        top: calc(10px + env(safe-area-inset-top)) !important;
+        left: 10px !important;
+        z-index: 10000 !important;
+        width: auto !important;
+        min-width: 92px !important;
+        height: 44px !important;
+        padding: 0 14px !important;
+        border-radius: 12px !important;
+        background: var(--blanc) !important;
+        color: var(--texte) !important;
+        border: 1px solid var(--bordure) !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,.15) !important;
+    }
+
+    #menuNavigation {
+        position: fixed !important;
+        top: calc(62px + env(safe-area-inset-top)) !important;
+        left: 10px !important;
+        right: 10px !important;
+        z-index: 9999 !important;
+        background: var(--blanc) !important;
+        border: 1px solid var(--bordure) !important;
+        border-radius: 16px !important;
+        padding: 10px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,.20) !important;
+        max-height: calc(100vh - 85px) !important;
+        overflow-y: auto !important;
+    }
+
+    #menuNavigation.menu-ouvert {
+        display: grid !important;
+    }
+
+    /* Laisse de la place au bouton en haut */
+    .conteneur {
+        padding-top: 58px !important;
+    }
+}
 
 </style>
 
@@ -2318,10 +2483,13 @@ body.mode-sombre .btn-quitter-jeu {
 
     <aside class="menu">
 
+        <button id="btnOuvrirMenu" class="btn-menu-mobile" type="button" aria-expanded="false">☰ <span>Menu</span></button>
+
         <p class="menu-titre">
             Menu
         </p>
 
+        <div id="menuNavigation">
 
         <button
             id="btnAccueil"
@@ -2367,6 +2535,7 @@ body.mode-sombre .btn-quitter-jeu {
             <span>Modération</span>
         </button>
 
+        </div>
 
         <div class="menu-separation"></div>
 
@@ -3017,6 +3186,27 @@ const btnClassement =
 
 const btnModeration =
     document.getElementById("btnModeration");
+
+const btnOuvrirMenu = document.getElementById("btnOuvrirMenu");
+const menuNavigation = document.getElementById("menuNavigation");
+
+if (btnOuvrirMenu && menuNavigation) {
+    btnOuvrirMenu.addEventListener("click", () => {
+        const ouvert = menuNavigation.classList.toggle("menu-ouvert");
+        btnOuvrirMenu.setAttribute("aria-expanded", ouvert ? "true" : "false");
+        btnOuvrirMenu.innerHTML = ouvert ? "✕ <span>Fermer</span>" : "☰ <span>Menu</span>";
+    });
+
+    [btnAccueil, btnDiscussion, btnAmis, btnGroupes, btnJeux, btnClassement, btnModeration]
+        .filter(Boolean)
+        .forEach(btn => btn.addEventListener("click", () => {
+            if (window.innerWidth <= 750) {
+                menuNavigation.classList.remove("menu-ouvert");
+                btnOuvrirMenu.setAttribute("aria-expanded", "false");
+                btnOuvrirMenu.innerHTML = "☰ <span>Menu</span>";
+            }
+        }));
+}
 
 
 /* =========================================================
