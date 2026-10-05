@@ -2401,6 +2401,165 @@ body.mode-sombre .btn-quitter-jeu {
     }
 }
 
+/* =========================================================
+   PROFIL PUBLIC
+========================================================= */
+.fenetre-profil-public{
+    position:fixed;
+    inset:0;
+    z-index:5000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.58);
+    box-sizing:border-box;
+}
+.carte-profil-public{
+    width:min(520px,100%);
+    max-height:min(88vh,760px);
+    overflow:auto;
+    padding:22px;
+    background:var(--blanc);
+    color:var(--texte);
+    border:1px solid var(--bordure);
+    border-radius:22px;
+    box-shadow:0 24px 80px rgba(15,23,42,.28);
+}
+.entete-profil-public{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+.avatar-public{
+    width:92px;
+    height:92px;
+    min-width:92px;
+    border-radius:24px;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+    font-weight:900;
+    color:white;
+}
+.avatar-public img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+.infos-public{
+    min-width:0;
+    flex:1;
+}
+.infos-public h2{
+    margin:0 0 6px;
+    overflow-wrap:anywhere;
+}
+.grade-public{
+    color:var(--texte-secondaire);
+    font-size:13px;
+}
+.statut-public{
+    margin-top:6px;
+    color:var(--texte-secondaire);
+    font-size:12px;
+}
+.bio-public{
+    margin-top:18px;
+    padding:15px;
+    background:var(--primaire-clair);
+    border:1px solid var(--bordure);
+    border-radius:14px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+}
+.bio-public.vide{
+    color:var(--texte-secondaire);
+    font-style:italic;
+}
+.stats-public{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    margin-top:14px;
+}
+.stat-public{
+    padding:12px 8px;
+    text-align:center;
+    border:1px solid var(--bordure);
+    border-radius:12px;
+    background:var(--blanc);
+}
+.stat-public b{
+    display:block;
+    font-size:16px;
+}
+.stat-public span{
+    display:block;
+    margin-top:3px;
+    color:var(--texte-secondaire);
+    font-size:11px;
+}
+.actions-public{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:18px;
+}
+.actions-public button{
+    flex:1;
+    min-width:130px;
+    min-height:44px;
+    padding:10px 13px;
+    border:0;
+    border-radius:11px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.btn-public-principal{
+    background:var(--primaire);
+    color:white;
+}
+.btn-public-secondaire{
+    background:var(--primaire-clair);
+    color:var(--primaire);
+}
+.btn-public-fermer{
+    background:var(--rouge-clair);
+    color:var(--rouge);
+}
+.carte-utilisateur{
+    cursor:pointer;
+}
+.carte-utilisateur .btn-parler{
+    cursor:pointer;
+}
+@media(max-width:600px){
+    .fenetre-profil-public{
+        align-items:flex-end;
+        padding:10px;
+        padding-bottom:calc(10px + env(safe-area-inset-bottom));
+    }
+    .carte-profil-public{
+        width:100%;
+        max-height:88vh;
+        padding:18px;
+        border-radius:20px;
+    }
+    .avatar-public{
+        width:76px;
+        height:76px;
+        min-width:76px;
+        border-radius:20px;
+    }
+    .stats-public{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
 </style>
 
 </head>
@@ -4215,6 +4374,22 @@ function creerCarteUtilisateur(
         infos
     );
 
+    /* Cliquer sur le profil ouvre sa fiche publique. */
+    avatar.addEventListener("click", function(e) {
+        e.stopPropagation();
+        ouvrirProfilPublic(profil.id);
+    });
+
+    nom.addEventListener("click", function(e) {
+        e.stopPropagation();
+        ouvrirProfilPublic(profil.id);
+    });
+
+    carte.addEventListener("click", function(e) {
+        if (e.target.closest("button")) return;
+        ouvrirProfilPublic(profil.id);
+    });
+
 
     /*
        On ne met pas le bouton "Parler"
@@ -4239,12 +4414,10 @@ function creerCarteUtilisateur(
 
         bouton.addEventListener(
             "click",
-            function() {
-
-                ouvrirDiscussionPrivee(
-                    profil
-                );
-
+            async function(e) {
+                e.stopPropagation();
+                fermerProfilPublic();
+                await ouvrirDiscussionPrivee(profil);
             }
         );
 
@@ -6030,7 +6203,7 @@ async function chargerPotes() {
         error
     } = await client
         .from("profils")
-        .select("id, pseudo, photo_url, couleur")
+        .select("id, pseudo, photo_url, couleur, bio, grade, derniere_connexion")
         .order(
             "pseudo",
             {
@@ -9641,6 +9814,173 @@ function allerEnBas() {
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 function avatarMini(p,big=false){let c=p.couleur||"#4f46e5";return p.photo_url?`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c}"><img src="${esc(p.photo_url)}"></div>`:`<div class="${big?"grand-avatar":"avatar-mini"}" style="background:${c};color:#fff">${esc((p.pseudo||"?")[0].toUpperCase())}</div>`;}
 function initialiserFonctionsSociales(){if(!utilisateur)return;if(!btnProfil){btnProfil=document.createElement("button");btnProfil.id="btnProfil";btnProfil.innerHTML="<span>⚙️</span><span>Profil</span>";btnProfil.onclick=afficherProfil;btnAmis.parentNode.insertBefore(btnProfil,btnJeux);}if(!badgeDemandesAmis){badgeDemandesAmis=document.createElement("span");badgeDemandesAmis.className="menu-badge";badgeDemandesAmis.style.display="none";btnAmis.appendChild(badgeDemandesAmis);}chargerBadgeDemandesAmis();initialiserCanalAmis();initialiserCanalReactions();}
+
+function fermerProfilPublic(){
+    const f=document.getElementById("fenetreProfilPublic");
+    if(f){
+        f.remove();
+    }
+}
+
+async function ouvrirProfilPublic(profilId){
+    if(!profilId || !utilisateur) return;
+
+    await fermerProfilPublic();
+
+    const chargement=document.createElement("div");
+    chargement.className="fenetre-profil-public";
+    chargement.innerHTML=`
+        <div class="carte-profil-public">
+            <div class="message-vide">Chargement du profil...</div>
+        </div>`;
+    chargement.addEventListener("click",function(e){
+        if(e.target===chargement) fermerProfilPublic();
+    });
+    document.body.appendChild(chargement);
+
+    const {data:profil,error}=await client
+        .from("profils")
+        .select("id,pseudo,photo_url,couleur,bio,grade,derniere_connexion")
+        .eq("id",profilId)
+        .maybeSingle();
+
+    if(error || !profil){
+        chargement.querySelector(".carte-profil-public").innerHTML=`
+            <div class="message-vide">
+                Impossible de charger ce profil.
+                <br><br>
+                <button class="btn-public-fermer" style="padding:10px 14px;border:0;border-radius:10px;font-weight:bold;cursor:pointer" id="fermerProfilErreur">Fermer</button>
+            </div>`;
+        document.getElementById("fermerProfilErreur").onclick=fermerProfilPublic;
+        return;
+    }
+
+    let stats={parties:0,victoires:0,defaites:0,nuls:0,points:0,serie:0};
+    try{
+        const r=await client
+            .from("stats_jeux")
+            .select("parties,victoires,defaites,nuls,points,serie")
+            .eq("user_id",profil.id)
+            .maybeSingle();
+        if(r.data) stats={...stats,...r.data};
+    }catch(e){
+        console.warn("Stats profil public:",e);
+    }
+
+    const connecte=recupererIdsConnectes().has(String(profil.id));
+    const photo=profil.photo_url||"";
+    const couleur=profil.couleur||"#4f46e5";
+    const derniere=profil.derniere_connexion
+        ? new Date(profil.derniere_connexion).toLocaleString("fr-FR")
+        : "Jamais enregistrée";
+
+    let amitie={amis:[],recues:[],envoyees:[]};
+    try{
+        amitie=await etatAmis();
+    }catch(e){
+        console.warn("État des amis:",e);
+    }
+
+    const id=String(profil.id);
+    const estMoi=id===String(utilisateur.id);
+    const estAmi=amitie.amis.map(String).includes(id);
+    const demandeEnvoyee=amitie.envoyees.some(x=>String(x.receveur_id)===id);
+    const demandeRecue=amitie.recues.find(x=>String(x.demandeur_id)===id);
+
+    let avatarHtml;
+    if(photo){
+        avatarHtml=`<img src="${esc(photo)}" alt="Photo de profil de @${esc(profil.pseudo)}">`;
+    }else{
+        avatarHtml=esc((profil.pseudo||"?")[0].toUpperCase());
+    }
+
+    const bioHtml=profil.bio
+        ? esc(profil.bio)
+        : "Aucune description pour le moment.";
+
+    let actionHtml="";
+    if(!estMoi){
+        if(estAmi){
+            actionHtml+=`<button class="btn-public-secondaire" id="profilPublicAmi">✓ Pote</button>`;
+        }else if(demandeEnvoyee){
+            actionHtml+=`<button class="btn-public-secondaire" id="profilPublicAttente" disabled>⏳ Demande envoyée</button>`;
+        }else if(demandeRecue){
+            actionHtml+=`<button class="btn-public-principal" id="profilPublicAccepter">✅ Accepter la demande</button>`;
+        }else{
+            actionHtml+=`<button class="btn-public-principal" id="profilPublicAjouter">➕ Ajouter en pote</button>`;
+        }
+
+        actionHtml+=`<button class="btn-public-secondaire" id="profilPublicMessage">💬 Message</button>`;
+    }
+
+    chargement.querySelector(".carte-profil-public").innerHTML=`
+        <div class="entete-profil-public">
+            <div class="avatar-public" style="background:${esc(couleur)}">${avatarHtml}</div>
+            <div class="infos-public">
+                <h2>@${esc(profil.pseudo)}</h2>
+                <div class="grade-public">${esc(nomGrade(profil.grade||"arrivant"))}</div>
+                <div class="statut-public">${connecte ? "🟢 En ligne" : "⚫ Hors ligne"}</div>
+            </div>
+        </div>
+
+        <div class="bio-public ${profil.bio ? "" : "vide"}">${bioHtml}</div>
+
+        <div class="stats-public">
+            <div class="stat-public"><b>⭐ ${Number(stats.points||0)}</b><span>Points</span></div>
+            <div class="stat-public"><b>🎮 ${Number(stats.parties||0)}</b><span>Parties</span></div>
+            <div class="stat-public"><b>🏆 ${Number(stats.victoires||0)}</b><span>Victoires</span></div>
+            <div class="stat-public"><b>❌ ${Number(stats.defaites||0)}</b><span>Défaites</span></div>
+            <div class="stat-public"><b>🤝 ${Number(stats.nuls||0)}</b><span>Nuls</span></div>
+            <div class="stat-public"><b>🔥 ${Number(stats.serie||0)}</b><span>Série</span></div>
+        </div>
+
+        <div style="margin-top:14px;color:var(--texte-secondaire);font-size:12px">
+            🕒 Dernière connexion : ${esc(derniere)}
+        </div>
+
+        <div class="actions-public">
+            ${actionHtml}
+            <button class="btn-public-fermer" id="btnFermerProfilPublic">Fermer</button>
+        </div>
+    `;
+
+    const btnFermerProfilPublic=document.getElementById("btnFermerProfilPublic");
+    if(btnFermerProfilPublic){
+        btnFermerProfilPublic.addEventListener("click", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            fermerProfilPublic();
+        });
+    }
+
+    const btnAjouter=document.getElementById("profilPublicAjouter");
+    if(btnAjouter){
+        btnAjouter.onclick=async function(){
+            btnAjouter.disabled=true;
+            btnAjouter.textContent="⏳ Envoi...";
+            await envoyerDemande(profil.id);
+            await ouvrirProfilPublic(profil.id);
+        };
+    }
+
+    const btnAccepter=document.getElementById("profilPublicAccepter");
+    if(btnAccepter){
+        btnAccepter.onclick=async function(){
+            btnAccepter.disabled=true;
+            await traiterDemande(demandeRecue,true);
+            await ouvrirProfilPublic(profil.id);
+        };
+    }
+
+    const btnMessage=document.getElementById("profilPublicMessage");
+    if(btnMessage){
+        btnMessage.onclick=async function(){
+            await fermerProfilPublic();
+            await ouvrirDiscussionPrivee(profil);
+        };
+    }
+}
+
 async function afficherProfil(){
     fermerConversationPrivee();
     zoneEnvoi.style.display="none";
@@ -10416,6 +10756,10 @@ initialiserModeSombre();
 ========================================================= */
 
 verifierConnexionSauvegardee();
+
+document.addEventListener("keydown",function(e){
+    if(e.key==="Escape") fermerProfilPublic();
+});
 
 </script>
 
