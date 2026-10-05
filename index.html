@@ -4417,6 +4417,7 @@ function creerCarteUtilisateur(
             async function(e) {
                 e.stopPropagation();
                 fermerProfilPublic();
+                await new Promise(resolve => setTimeout(resolve, 0));
                 await ouvrirDiscussionPrivee(profil);
             }
         );
@@ -9829,6 +9830,7 @@ async function ouvrirProfilPublic(profilId){
 
     const chargement=document.createElement("div");
     chargement.className="fenetre-profil-public";
+    chargement.id="fenetreProfilPublic";
     chargement.innerHTML=`
         <div class="carte-profil-public">
             <div class="message-vide">Chargement du profil...</div>
@@ -9975,7 +9977,8 @@ async function ouvrirProfilPublic(profilId){
     const btnMessage=document.getElementById("profilPublicMessage");
     if(btnMessage){
         btnMessage.onclick=async function(){
-            await fermerProfilPublic();
+            fermerProfilPublic();
+            await new Promise(resolve => setTimeout(resolve, 0));
             await ouvrirDiscussionPrivee(profil);
         };
     }
