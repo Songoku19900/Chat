@@ -3653,74 +3653,51 @@ async function connecter() {
     afficherErreur("");
     afficherSucces("");
 
-    const pseudo =
-        inputPseudo.value.trim();
-
-    const code =
-        inputMotDePasse.value;
-
+    const pseudo = inputPseudo.value.trim();
+    const code = inputMotDePasse.value;
 
     if (!verifierPseudo(pseudo)) {
-
-        afficherErreur(
-            "Pseudo invalide."
-        );
-
+        afficherErreur("Pseudo invalide.");
         return;
     }
-
 
     if (!code) {
-
-        afficherErreur(
-            "Entre ton code secret."
-        );
-
+        afficherErreur("Entre ton code secret.");
         return;
     }
 
-
     btnConnexion.disabled = true;
+    afficherSucces("Connexion...");
 
-    afficherSucces(
-        "Connexion..."
-    );
-
-
-    const {
-        data: profil,
-        error
-    } = await client
+    // On cherche uniquement le pseudo.
+    // Le code est ensuite vérifié côté JavaScript pour éviter
+    // les problèmes de comparaison du champ code dans Supabase.
+    const { data: profil, error } = await client
         .from("profils")
         .select("*")
         .eq("pseudo", pseudo)
-        .eq("code", code)
         .maybeSingle();
 
-
     if (error) {
-
-        afficherErreur(
-            "Erreur de connexion : " +
-            error.message
-        );
-
+        afficherErreur("Erreur de connexion : " + error.message);
         console.error(error);
-
         btnConnexion.disabled = false;
-
         return;
     }
 
-
     if (!profil) {
-
-        afficherErreur(
-            "Pseudo ou code incorrect."
-        );
-
+        afficherErreur("Pseudo ou code incorrect.");
         btnConnexion.disabled = false;
+        return;
+    }
 
+    // Comparaison robuste : les deux valeurs sont converties en texte.
+    const codeCompte = String(profil.code ?? "");
+    const codeEntre = String(code);
+
+    if (codeCompte !== codeEntre) {
+        afficherErreur("Pseudo ou code incorrect.");
+        btnConnexion.disabled = false;
         return;
     }
 
@@ -3731,7 +3708,6 @@ async function connecter() {
     }
 
     await ouvrirApplication(profil);
-
     btnConnexion.disabled = false;
 
 }
