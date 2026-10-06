@@ -3491,149 +3491,8 @@ async function utilisateurEstBanni() {
 
 
 /* =========================================================
-   SUPABASE AUTH
-========================================================= */
-
-let authChargementEnCours = false;
-let authInitialisationTerminee = false;
-
-function creerEmailTechniqueDepuisPseudo(pseudo) {
-    const texte = String(pseudo || "");
-    let hex = "";
-
-    for (const caractere of texte) {
-        hex += caractere.codePointAt(0).toString(16).padStart(4, "0");
-    }
-
-    return "chat" + hex + "@chat-auth.fr";
-}
-
-
-async function chargerProfilDepuisAuth(user) {
-
-    if (!user || !user.id) {
-        return false;
-    }
-
-    if (
-        authChargementEnCours ||
-        (
-            utilisateur &&
-            String(utilisateur.auth_user_id || "") === String(user.id)
-        )
-    ) {
-        return true;
-    }
-
-    authChargementEnCours = true;
-
-    try {
-
-        const {
-            data: profil,
-            error
-        } = await client
-            .from("profils")
-            .select("*")
-            .eq("auth_user_id", user.id)
-            .maybeSingle();
-
-        if (error) {
-            console.error("Erreur chargement profil Auth :", error);
-            afficherErreur(
-                "Impossible de charger ton profil : " +
-                error.message
-            );
-            return false;
-        }
-
-        if (!profil) {
-            console.error(
-                "Aucun profil trouvé pour l'utilisateur Auth :",
-                user.id
-            );
-            return false;
-        }
-
-        if (
-            profil.banni_jusqu_a &&
-            new Date(profil.banni_jusqu_a) > new Date()
-        ) {
-            afficherErreur(
-                "🚫 Ton compte est banni jusqu'au " +
-                new Date(profil.banni_jusqu_a).toLocaleString("fr-FR") +
-                "."
-            );
-
-            await client.auth.signOut();
-            return false;
-        }
-
-        await ouvrirApplication(profil);
-        return true;
-
-    } finally {
-        authChargementEnCours = false;
-    }
-}
-
-
-async function initialiserSupabaseAuth() {
-
-    const {
-        data,
-        error
-    } = await client.auth.getSession();
-
-    if (error) {
-        console.error("Erreur session Supabase Auth :", error);
-        return;
-    }
-
-    if (data && data.session && data.session.user) {
-        await chargerProfilDepuisAuth(
-            data.session.user
-        );
-    }
-
-    client.auth.onAuthStateChange(
-        async function(event, session) {
-
-            if (
-                event === "SIGNED_IN" &&
-                session &&
-                session.user
-            ) {
-                setTimeout(
-                    function() {
-                        chargerProfilDepuisAuth(
-                            session.user
-                        );
-                    },
-                    0
-                );
-            }
-
-            if (event === "SIGNED_OUT") {
-
-                utilisateur = null;
-                pseudoActuel = "";
-
-                application.style.display = "none";
-                connexion.style.display = "flex";
-
-            }
-        }
-    );
-
-    authInitialisationTerminee = true;
-}
-
-
-/* =========================================================
    INSCRIPTION
 ========================================================= */
-
 
 btnInscription.addEventListener(
     "click",
@@ -3652,6 +3511,7 @@ async function inscrire() {
     const code =
         inputMotDePasse.value;
 
+
     if (!verifierPseudo(pseudo)) {
 
         afficherErreur(
@@ -3660,6 +3520,7 @@ async function inscrire() {
 
         return;
     }
+
 
     if (!verifierCode(code)) {
 
@@ -3670,162 +3531,95 @@ async function inscrire() {
         return;
     }
 
+
     btnInscription.disabled = true;
 
     afficherSucces(
-        "Création du compte dans Supabase Auth..."
+        "Création du compte..."
     );
 
-    try {
 
-        const {
-            data: profilExistant,
-            error: erreurRecherche
-        } = await client
-            .from("profils")
-            .select("id")
-            .eq("pseudo", pseudo)
-            .maybeSingle();
+    const {
+        data: profilExistant,
+        error: erreurRecherche
+    } = await client
+        .from("profils")
+        .select("id")
+        .eq("pseudo", pseudo)
+        .maybeSingle();
 
-        if (erreurRecherche) {
-            throw erreurRecherche;
-        }
 
-        if (profilExistant) {
-
-            afficherErreur(
-                "Ce pseudo est déjà utilisé."
-            );
-
-            return;
-        }
-
-        const profilId = crypto.randomUUID();
-        const emailTechnique = creerEmailTechniqueDepuisPseudo(pseudo);
-
-        const {
-            data,
-            error
-        } = await client.auth.signUp({
-
-            email: emailTechnique,
-
-            password: code,
-
-            options: {
-                data: {
-                    pseudo: pseudo,
-                    profil_id: profilId
-                }
-            }
-
-        });
-
-        if (error) {
-            throw error;
-        }
-
-        if (
-            !data ||
-            !data.user
-        ) {
-            throw new Error(
-                "Supabase Auth n'a pas créé l'utilisateur."
-            );
-        }
-
-        /*
-           profils.id reste l'identifiant historique du Chat.
-           auth_user_id contient l'identifiant Supabase Auth.
-        */
-        const {
-            error: erreurProfil
-        } = await client
-            .from("profils")
-            .insert({
-
-                id: profilId,
-
-                auth_user_id: data.user.id,
-
-                pseudo: pseudo,
-
-                /*
-                   Ancienne colonne conservée uniquement
-                   pour compatibilité avec l'ancienne structure.
-                   Elle n'est plus utilisée pour se connecter.
-                */
-                code: "AUTH",
-
-                grade: "arrivant"
-
-            });
-
-        if (erreurProfil) {
-
-            /*
-               Si le profil n'a pas pu être créé, on évite
-               de laisser un compte Auth sans profil.
-            */
-            try {
-                await client.auth.signOut();
-            } catch (e) {
-                console.error(e);
-            }
-
-            throw erreurProfil;
-        }
-
-        /*
-           Si la confirmation email est activée dans Supabase,
-           data.session sera vide. Comme l'adresse est technique,
-           la confirmation ne peut pas être reçue.
-        */
-        if (!data.session) {
-
-            afficherErreur(
-                "Le compte Auth a été créé, mais Supabase demande une confirmation email. Désactive « Confirm email » dans Supabase Auth > Providers > Email."
-            );
-
-            return;
-        }
-
-        afficherSucces(
-            "Compte créé avec Supabase Auth ! Connexion..."
-        );
-
-        inputMotDePasse.value = "";
-
-        await chargerProfilDepuisAuth(
-            data.user
-        );
-
-    } catch (error) {
-
-        console.error("Erreur inscription Auth :", error);
-
-        let message =
-            error && error.message
-                ? error.message
-                : "Impossible de créer le compte.";
-
-        if (
-            message.toLowerCase().includes("already registered")
-        ) {
-            message =
-                "Ce pseudo est déjà utilisé.";
-        }
+    if (erreurRecherche) {
 
         afficherErreur(
-            "Erreur lors de la création : " +
-            message
+            "Erreur de vérification : " +
+            erreurRecherche.message
         );
 
-    } finally {
+        console.error(erreurRecherche);
 
         btnInscription.disabled = false;
 
+        return;
     }
+
+
+    if (profilExistant) {
+
+        afficherErreur(
+            "Ce pseudo est déjà utilisé."
+        );
+
+        btnInscription.disabled = false;
+
+        return;
+    }
+
+
+    const nouvelId =
+        crypto.randomUUID();
+
+
+    const {
+        error
+    } = await client
+        .from("profils")
+        .insert({
+
+            id: nouvelId,
+
+            pseudo: pseudo,
+
+            code: code,
+
+            grade: "arrivant"
+
+        });
+
+
+    if (error) {
+
+        afficherErreur(
+            "Erreur lors de la création : " +
+            error.message
+        );
+
+        console.error(error);
+
+        btnInscription.disabled = false;
+
+        return;
+    }
+
+
+    afficherSucces(
+        "Compte créé ! Tu peux maintenant te connecter."
+    );
+
+
+    inputMotDePasse.value = "";
+
+    btnInscription.disabled = false;
 
 }
 
@@ -3833,8 +3627,6 @@ async function inscrire() {
 /* =========================================================
    CONNEXION
 ========================================================= */
-
-
 
 btnConnexion.addEventListener(
     "click",
@@ -3867,6 +3659,7 @@ async function connecter() {
     const code =
         inputMotDePasse.value;
 
+
     if (!verifierPseudo(pseudo)) {
 
         afficherErreur(
@@ -3875,6 +3668,7 @@ async function connecter() {
 
         return;
     }
+
 
     if (!code) {
 
@@ -3885,109 +3679,67 @@ async function connecter() {
         return;
     }
 
+
     btnConnexion.disabled = true;
 
     afficherSucces(
-        "Connexion à Supabase Auth..."
+        "Connexion..."
     );
 
-    try {
 
-        /*
-           On se connecte directement à Supabase Auth avec
-           l'adresse technique construite à partir du pseudo.
-           On ne fait PAS de SELECT dans profils avant la connexion,
-           ce qui évite qu'une règle RLS bloque la connexion.
-        */
+    const {
+        data: profil,
+        error
+    } = await client
+        .from("profils")
+        .select("*")
+        .eq("pseudo", pseudo)
+        .eq("code", code)
+        .maybeSingle();
 
-        const emailTechnique =
-            creerEmailTechniqueDepuisPseudo(pseudo);
 
-        const {
-            data,
-            error
-        } = await client.auth.signInWithPassword({
+    if (error) {
 
-            email: emailTechnique,
-
-            password: code
-
-        });
-
-        if (error) {
-            throw error;
-        }
-
-        if (
-            !data ||
-            !data.user
-        ) {
-            throw new Error(
-                "Supabase Auth n'a pas renvoyé de compte."
-            );
-        }
-
-        /*
-           Maintenant que Supabase Auth est connecté,
-           on retrouve l'ancien profil grâce à auth_user_id.
-        */
-
-        const connecte =
-            await chargerProfilDepuisAuth(
-                data.user
-            );
-
-        if (!connecte) {
-            throw new Error(
-                "Ton compte Auth existe, mais ton profil Chat est introuvable."
-            );
-        }
-
-        inputMotDePasse.value = "";
-
-        afficherSucces("");
-
-    } catch (error) {
-
-        console.error("Erreur connexion Auth :", error);
-
-        if (
-            error &&
-            error.message &&
-            error.message.toLowerCase().includes("invalid login credentials")
-        ) {
-            afficherErreur(
-                "Pseudo ou code incorrect."
-            );
-        } else if (
-            error &&
+        afficherErreur(
+            "Erreur de connexion : " +
             error.message
-        ) {
-            afficherErreur(
-                "Impossible de te connecter : " +
-                error.message
-            );
-        } else {
-            afficherErreur(
-                "Impossible de te connecter."
-            );
-        }
+        );
 
-    } finally {
+        console.error(error);
 
         btnConnexion.disabled = false;
 
+        return;
     }
 
-}
 
+    if (!profil) {
+
+        afficherErreur(
+            "Pseudo ou code incorrect."
+        );
+
+        btnConnexion.disabled = false;
+
+        return;
+    }
+
+    if (profil.banni_jusqu_a && new Date(profil.banni_jusqu_a) > new Date()) {
+        afficherErreur("🚫 Ton compte est banni jusqu'au " + new Date(profil.banni_jusqu_a).toLocaleString("fr-FR") + ".");
+        btnConnexion.disabled = false;
+        return;
+    }
+
+    await ouvrirApplication(profil);
+
+    btnConnexion.disabled = false;
+
+}
 
 
 /* =========================================================
    OUVRIR APPLICATION
 ========================================================= */
-
-
 
 async function ouvrirApplication(profil) {
 
@@ -4001,6 +3753,18 @@ async function ouvrirApplication(profil) {
     if (btnModeration) {
         btnModeration.style.display = estAdmin() ? "flex" : "none";
     }
+
+
+    localStorage.setItem(
+        "compte_chat",
+        JSON.stringify({
+
+            id: profil.id,
+
+            pseudo: profil.pseudo
+
+        })
+    );
 
 
     monPseudo.innerHTML = "@" + pseudoActuel + " ";
@@ -10321,6 +10085,11 @@ async function sauverProfil(){
         pseudoActuel = profilSauve.pseudo;
         monPseudo.textContent = "@" + pseudoActuel;
 
+        localStorage.setItem("compte_chat", JSON.stringify({
+            id: profilSauve.id,
+            pseudo: profilSauve.pseudo
+        }));
+
         msg.textContent = "✅ Profil enregistré !";
         afficherProfil();
 
@@ -10526,11 +10295,9 @@ document.getElementById(
             "";
 
 
-        try {
-            await client.auth.signOut();
-        } catch (error) {
-            console.error("Erreur déconnexion Supabase Auth :", error);
-        }
+        localStorage.removeItem(
+            "compte_chat"
+        );
 
 
         application.style.display =
@@ -10568,20 +10335,94 @@ document.getElementById(
 
 async function verifierConnexionSauvegardee() {
 
-    /*
-       La reconnexion ne dépend plus de localStorage.
-       Supabase Auth restaure automatiquement sa session.
-    */
-    await initialiserSupabaseAuth();
+    const compteSauvegarde =
+        localStorage.getItem(
+            "compte_chat"
+        );
+
+
+    if (!compteSauvegarde) {
+        return;
+    }
+
+
+    try {
+
+        const compte =
+            JSON.parse(
+                compteSauvegarde
+            );
+
+
+        if (
+            !compte.id
+        ) {
+
+            localStorage.removeItem(
+                "compte_chat"
+            );
+
+            return;
+
+        }
+
+
+        /*
+           IMPORTANT :
+           On utilise surtout l'ID interne.
+           Le pseudo est récupéré depuis Supabase.
+        */
+
+        const {
+            data: profil,
+            error
+        } = await client
+            .from("profils")
+            .select("*")
+            .eq(
+                "id",
+                compte.id
+            )
+            .maybeSingle();
+
+
+        if (
+            error ||
+            !profil
+        ) {
+
+            localStorage.removeItem(
+                "compte_chat"
+            );
+
+            return;
+
+        }
+
+
+        await ouvrirApplication(
+            profil
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        localStorage.removeItem(
+            "compte_chat"
+        );
+
+    }
 
 }
+
+
 
 
 /* =========================================================
    NOTIFICATIONS
 ========================================================= */
-
-
 
 let canalNotifications = null;
 
