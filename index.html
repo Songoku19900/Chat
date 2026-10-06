@@ -3893,25 +3893,15 @@ async function connecter() {
 
     try {
 
-        const {
-            data: profilConnexion,
-            error: erreurProfilConnexion
-        } = await client
-            .from("profils")
-            .select("id, pseudo, auth_user_id")
-            .eq("pseudo", pseudo)
-            .maybeSingle();
-
-        if (erreurProfilConnexion) {
-            throw erreurProfilConnexion;
-        }
-
-        if (!profilConnexion || !profilConnexion.auth_user_id) {
-            throw new Error("Ce compte n'est pas encore migre vers Supabase Auth.");
-        }
+        /*
+           On se connecte directement à Supabase Auth avec
+           l'adresse technique construite à partir du pseudo.
+           On ne fait PAS de SELECT dans profils avant la connexion,
+           ce qui évite qu'une règle RLS bloque la connexion.
+        */
 
         const emailTechnique =
-            creerEmailTechniqueDepuisPseudo(profilConnexion.pseudo);
+            creerEmailTechniqueDepuisPseudo(pseudo);
 
         const {
             data,
@@ -3937,6 +3927,11 @@ async function connecter() {
             );
         }
 
+        /*
+           Maintenant que Supabase Auth est connecté,
+           on retrouve l'ancien profil grâce à auth_user_id.
+        */
+
         const connecte =
             await chargerProfilDepuisAuth(
                 data.user
@@ -3948,15 +3943,35 @@ async function connecter() {
             );
         }
 
+        inputMotDePasse.value = "";
+
         afficherSucces("");
 
     } catch (error) {
 
         console.error("Erreur connexion Auth :", error);
 
-        afficherErreur(
-            "Pseudo ou code incorrect."
-        );
+        if (
+            error &&
+            error.message &&
+            error.message.toLowerCase().includes("invalid login credentials")
+        ) {
+            afficherErreur(
+                "Pseudo ou code incorrect."
+            );
+        } else if (
+            error &&
+            error.message
+        ) {
+            afficherErreur(
+                "Impossible de te connecter : " +
+                error.message
+            );
+        } else {
+            afficherErreur(
+                "Impossible de te connecter."
+            );
+        }
 
     } finally {
 
@@ -3965,6 +3980,7 @@ async function connecter() {
     }
 
 }
+
 
 
 /* =========================================================
